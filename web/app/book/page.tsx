@@ -169,10 +169,7 @@ export default function BookPage() {
               key={slot.hour}
               className={`slot${unavailable && !slot.mine ? " unavailable" : ""}`}
             >
-              <div className="time">
-                {formatHour(slot.hour)}
-                {slot.prime && <span className="badge prime">Prime</span>}
-              </div>
+              <div className="time">{formatHour(slot.hour)}</div>
               <div className="spots">
                 {slot.past
                   ? "—"
