@@ -109,10 +109,11 @@ export default function BookPage() {
 
       {!user && (
         <div className="notice info">
-          <a href="/login?next=/book">Log in</a> or{" "}
-          <a href="/signup">create an account</a> to book — your first session
-          is just ${rates.firstSession}. Members also see who&apos;s on the
-          schedule.
+          <a href="/login?next=/book">Log in</a> to book. New to 480? Reach
+          out to Warren Holzemer at{" "}
+          <a href="tel:+17037555977">(703) 755-5977</a> to set up your
+          membership — <a href="/signup">details here</a>. Your first session
+          is just ${rates.firstSession}.
         </div>
       )}
 

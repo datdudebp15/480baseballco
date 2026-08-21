@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getDb } from "@/lib/db";
+import { getDb, isoNow } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { addDays, localKey } from "@/lib/schedule";
 import { phoenixNow } from "@/lib/time";
@@ -60,8 +60,52 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Staff only." }, { status: 403 });
   }
   const body = await req.json().catch(() => null);
-  const userId = Number(body?.userId);
   const db = await getDb();
+
+  // Create a new account (the only way accounts get made — membership is
+  // set up personally by staff, no public self-signup).
+  if (body?.action === "create") {
+    const name = (body?.name ?? "").trim();
+    const email = (body?.email ?? "").trim().toLowerCase();
+    const phone = (body?.phone ?? "").trim() || null;
+    const tempPassword: string = body?.tempPassword ?? "";
+    const isMember = body?.isMember ? 1 : 0;
+    const waiverSigned = !!body?.waiverSigned;
+
+    if (name.length < 2) {
+      return NextResponse.json({ error: "Enter the customer's name." }, { status: 400 });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Enter a valid email." }, { status: 400 });
+    }
+    if (tempPassword.length < 8) {
+      return NextResponse.json(
+        { error: "Temp password must be at least 8 characters." },
+        { status: 400 }
+      );
+    }
+    if (await db.get("SELECT id FROM users WHERE email = ?", [email])) {
+      return NextResponse.json(
+        { error: "An account with that email already exists." },
+        { status: 409 }
+      );
+    }
+    const created = await db.get<{ id: number }>(
+      `INSERT INTO users (email, name, phone, password_hash, is_member, waiver_accepted_at)
+       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+      [
+        email,
+        name,
+        phone,
+        bcrypt.hashSync(tempPassword, 10),
+        isMember,
+        waiverSigned ? isoNow() : null,
+      ]
+    );
+    return NextResponse.json({ id: created!.id });
+  }
+
+  const userId = Number(body?.userId);
   const target = await db.get("SELECT id FROM users WHERE id = ?", [userId]);
   if (!target) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });

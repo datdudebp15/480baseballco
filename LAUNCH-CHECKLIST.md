@@ -34,12 +34,13 @@ Rule of thumb: **Phase 1 is all you; everything after is mostly me.**
 ## Phase 2 — Database & public deploy (ME — needs Neon + Vercel)
 
 - [x] Port the data layer SQLite → Postgres *(2026-08 — dual-driver: SQLite locally, Postgres auto-activates when DATABASE_URL is set; per-slot advisory locks preserve the no-double-booking guarantee; production build verified)*
-- [ ] Validate the Postgres path against the real Neon database (needs your connection string)
-- [ ] Deploy the app to Vercel (env vars, TZ=America/Phoenix, production cookies)
-- [ ] Deploy the marketing site
-- [ ] Wire the domain: site at root, app at `book.` subdomain; swap all localhost links
-- [ ] Purge demo accounts; you set a new staff password + enable 2FA on it
-- **Milestone: public URL you can send Danny.**
+- [x] Validate the Postgres path against the real Neon database *(2026-08-21 — full live battery green: signup+waiver, $50 first session, windows, capacity/dup, cancel, team blocks, roster privacy)*
+- [x] Deploy the app to Vercel *(live at 480baseballco-homescoutt.vercel.app; Neon Postgres attached via Vercel Storage)*
+- [x] Marketing site folded INTO the app — vintage landing at /, About + Inquiries included; one URL, no subdomain needed
+- [ ] Warren: change the staff password on the LIVE site (Account → Security) + enable 2FA — the seeded default is still active
+- [ ] Purge test/demo accounts before real launch (livetest@480check.com is in the live DB)
+- [ ] Custom domain when purchased (480hitting.co → this project)
+- **✅ Milestone reached: public URL you can send Danny — https://480baseballco-homescoutt.vercel.app**
 
 ## Phase 3 — Payments (ME — needs Stripe)
 

@@ -29,9 +29,9 @@ export default function MembershipPage() {
           <li>See who&apos;s on the schedule — members and guests</li>
           <li>Add friends and book times together</li>
         </ul>
-        <Link href="/signup" className="btn">
-          Create Your Account
-        </Link>
+        <a href="tel:+17037555977" className="btn">
+          Call or Text (703) 755-5977
+        </a>
         <p
           style={{
             marginTop: "12px",
@@ -39,8 +39,8 @@ export default function MembershipPage() {
             color: "var(--muted)",
           }}
         >
-          Online membership checkout is coming — for now the front desk
-          activates your membership on your account.
+          Membership is set up personally — reach out to Warren Holzemer and
+          we&apos;ll get you in the lane.
         </p>
         <p
           style={{

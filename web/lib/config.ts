@@ -4,6 +4,12 @@ export const facility = {
   name: "480 Hitting Co.",
   location: "Mesa, AZ",
 
+  // Membership is set up personally — accounts are created by staff after a
+  // conversation, not self-serve.
+  ownerName: "Warren Holzemer",
+  phoneDisplay: "(703) 755-5977",
+  phoneTel: "+17037555977",
+
   // Operating hours (24h clock). Last bookable slot starts one hour before close.
   openHour: 8,
   closeHour: 22,

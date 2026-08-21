@@ -133,7 +133,7 @@ function LoginForm() {
         </button>
       </form>
       <p className="auth-alt">
-        New here? <Link href="/signup">Create an account</Link>
+        New to 480? <Link href="/signup">Get set up</Link>
       </p>
     </div>
   );

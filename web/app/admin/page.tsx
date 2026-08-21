@@ -32,6 +32,8 @@ export default function AdminPage() {
   const [me, setMe] = useState<any | undefined>(undefined);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
+  const [na, setNa] = useState({ name: "", email: "", phone: "", tempPassword: "", isMember: true, waiverSigned: false });
   const [days, setDays] = useState<{ key: string }[]>([]);
   const [slots, setSlots] = useState<Record<string, Slot[]>>({});
   const [capacity, setCapacity] = useState(3);
@@ -54,6 +56,26 @@ export default function AdminPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function createAccount(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create", ...na }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setNotice({ kind: "error", text: data.error });
+      return;
+    }
+    setNotice({
+      kind: "success",
+      text: `Account created for ${na.name} (${na.isMember ? "Member" : "Guest"}). Give them their temp password — they can change it on their Account page.`,
+    });
+    setNa({ name: "", email: "", phone: "", tempPassword: "", isMember: true, waiverSigned: false });
+    load();
+  }
 
   async function toggleMember(u: UserRow) {
     await fetch("/api/admin/users", {
@@ -191,6 +213,45 @@ export default function AdminPage() {
       <h2 className="page-title" style={{ marginTop: 28, fontSize: 20 }}>
         Accounts
       </h2>
+      {notice && <div className={`notice ${notice.kind}`}>{notice.text}</div>}
+
+      <form onSubmit={createAccount} className="card block">
+        <h3 style={{ marginBottom: 10 }}>Add Account</h3>
+        <p className="page-sub" style={{ marginBottom: 12 }}>
+          New customers reach out to you by phone — create their account here
+          after the conversation.
+        </p>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <label className="field" style={{ flex: 1, minWidth: 160 }}>
+            Name
+            <input value={na.name} onChange={(e) => setNa({ ...na, name: e.target.value })} required />
+          </label>
+          <label className="field" style={{ flex: 1, minWidth: 180 }}>
+            Email
+            <input type="email" value={na.email} onChange={(e) => setNa({ ...na, email: e.target.value })} required />
+          </label>
+          <label className="field" style={{ flex: 1, minWidth: 140 }}>
+            Phone (optional)
+            <input value={na.phone} onChange={(e) => setNa({ ...na, phone: e.target.value })} />
+          </label>
+          <label className="field" style={{ flex: 1, minWidth: 160 }}>
+            Temp password (8+)
+            <input value={na.tempPassword} onChange={(e) => setNa({ ...na, tempPassword: e.target.value })} minLength={8} required />
+          </label>
+        </div>
+        <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, cursor: "pointer" }}>
+            <input type="checkbox" checked={na.isMember} onChange={(e) => setNa({ ...na, isMember: e.target.checked })} style={{ width: 17, height: 17 }} />
+            Member ($1,000 paid)
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, cursor: "pointer" }}>
+            <input type="checkbox" checked={na.waiverSigned} onChange={(e) => setNa({ ...na, waiverSigned: e.target.checked })} style={{ width: 17, height: 17 }} />
+            Waiver signed
+          </label>
+          <button className="btn small">Create Account</button>
+        </div>
+      </form>
+
       <div style={{ overflowX: "auto" }}>
         <table className="admin-table left">
           <thead>
