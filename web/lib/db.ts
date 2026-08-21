@@ -37,7 +37,9 @@ export function databaseUrl(): string | undefined {
     process.env.POSTGRES_URL ??
     process.env.DATABASE_POSTGRES_URL ??
     process.env.NEON_DATABASE_URL ??
-    process.env.STORAGE_URL
+    process.env.STORAGE_URL ??
+    process.env.DATABASE_URL_UNPOOLED ??
+    process.env.POSTGRES_URL_NON_POOLING
   );
 }
 
