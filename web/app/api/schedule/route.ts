@@ -119,11 +119,14 @@ export async function GET() {
   return NextResponse.json({
     user,
     capacity: facility.capacityPerHour,
-    rates: {
-      member: facility.memberHourlyRate,
-      public: facility.publicHourlyRate,
-      firstSession: facility.firstSessionRate,
-    },
+    // Pricing is discussed personally — rates only go to logged-in accounts.
+    rates: user
+      ? {
+          member: facility.memberHourlyRate,
+          public: facility.publicHourlyRate,
+          firstSession: facility.firstSessionRate,
+        }
+      : null,
     firstSessionEligible,
     windows: {
       member: facility.memberWindowDays,

@@ -23,7 +23,7 @@ type Schedule = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   user: any | null;
   capacity: number;
-  rates: { member: number; public: number; firstSession: number };
+  rates: { member: number; public: number; firstSession: number } | null;
   firstSessionEligible: boolean;
   windows: { member: number; public: number };
   days: Day[];
@@ -54,11 +54,13 @@ export default function BookPage() {
   const slots = data.slots[day.key] ?? [];
   const isMember = !!user && (user.isMember || user.role === "admin");
   const lockedOut = day.membersOnly && !isMember;
-  const rate = data.firstSessionEligible
-    ? rates.firstSession
-    : isMember
-      ? rates.member
-      : rates.public;
+  const rate = rates
+    ? data.firstSessionEligible
+      ? rates.firstSession
+      : isMember
+        ? rates.member
+        : rates.public
+    : null;
 
   async function book(slot: Slot) {
     if (!user) {
@@ -112,12 +114,11 @@ export default function BookPage() {
           <a href="/login?next=/book">Log in</a> to book. New to 480? Reach
           out to Warren Holzemer at{" "}
           <a href="tel:+17037555977">(703) 755-5977</a> to set up your
-          membership — <a href="/signup">details here</a>. Your first session
-          is just ${rates.firstSession}.
+          membership — <a href="/signup">details here</a>.
         </div>
       )}
 
-      {data.firstSessionEligible && (
+      {data.firstSessionEligible && rates && (
         <div className="notice success">
           First session special: your first hour is ${rates.firstSession}{" "}
           (normally ${rates.public}). It&apos;s applied automatically at
@@ -199,7 +200,7 @@ export default function BookPage() {
                 </div>
               )}
 
-              <div className="price">${rate}/hr</div>
+              {rate !== null && <div className="price">${rate}/hr</div>}
 
               {slot.mine ? (
                 <>

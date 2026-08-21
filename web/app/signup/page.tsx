@@ -25,9 +25,8 @@ export default function SignupPage() {
         Call or Text {facility.phoneDisplay}
       </a>
       <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.6 }}>
-        We&apos;ll get you set up with an account, walk you through the
-        facility, and get you in the lane — your first session is just $
-        {facility.firstSessionRate}.
+        We&apos;ll walk you through the facility, membership options and
+        pricing, and get you in the lane.
       </p>
       <p className="auth-alt">
         Already set up? <Link href="/login">Log in</Link>
