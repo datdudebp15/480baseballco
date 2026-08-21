@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, databaseUrl } from "@/lib/db";
 
 // Deployment diagnostics: reports which database mode the app is in and
 // whether it can actually connect. Reveals no secrets (host name only).
 export async function GET() {
-  const url = process.env.DATABASE_URL;
+  const url = databaseUrl();
   let dbHost: string | null = null;
   try {
     if (url) dbHost = new URL(url).hostname;

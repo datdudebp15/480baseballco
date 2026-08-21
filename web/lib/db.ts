@@ -29,6 +29,18 @@ export function isoNow(offsetMs = 0): string {
   return new Date(Date.now() + offsetMs).toISOString();
 }
 
+// Vercel's storage integrations inject the connection string under varying
+// names depending on how the database was linked — accept the common ones.
+export function databaseUrl(): string | undefined {
+  return (
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.DATABASE_POSTGRES_URL ??
+    process.env.NEON_DATABASE_URL ??
+    process.env.STORAGE_URL
+  );
+}
+
 /* ---------------- SQLite driver ---------------- */
 
 class SqliteDbx implements Dbx {
@@ -264,9 +276,10 @@ export function getDb(): Promise<Dbx> {
 }
 
 async function init(): Promise<Dbx> {
-  if (process.env.DATABASE_URL) {
+  const url = databaseUrl();
+  if (url) {
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: url,
       max: 5, // serverless-friendly; use Neon's pooled connection string
       ssl: { rejectUnauthorized: true },
     });
