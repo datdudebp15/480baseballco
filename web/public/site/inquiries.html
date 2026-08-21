@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inquiries · 480 Hitting Co.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Yellowtail&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --maroon: #7a1c2b; --maroon-deep: #56121e; --maroon-light: #94293a;
+      --cream: #efe0bf; --cream-bright: #f6ecd3; --sand: #d8c199; --gold: #d9c39c; --rust: #c15a2c; --ink: #2a161a;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif; color: var(--cream); min-height: 100vh; position: relative;
+      background:
+        radial-gradient(120% 60% at 50% -8%, rgba(217,195,156,0.16) 0%, rgba(193,90,44,0.12) 32%, rgba(86,18,30,0) 60%),
+        linear-gradient(180deg, #8a2434 0%, #6d1a29 55%, #56121e 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0.09;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+    header {
+      position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 38px; border-bottom: 1px solid rgba(239,224,191,0.14);
+    }
+    .mark { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .mark svg { width: 42px; height: 42px; }
+    .mark .txt { font-family: 'Alfa Slab One', serif; font-size: 17px; letter-spacing: 0.01em; color: var(--cream-bright); text-transform: uppercase; }
+    .nav { display: flex; gap: 26px; }
+    .nav a { text-decoration: none; color: var(--cream); font-weight: 400; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.82; transition: opacity 0.2s, color 0.2s; }
+    .nav a:hover { opacity: 1; color: var(--gold); }
+
+    .content { position: relative; z-index: 3; max-width: 560px; margin: 0 auto; padding: 46px 24px 70px; }
+    .est { font-family: Georgia, 'Times New Roman', serif; text-align: center; font-size: 13px; letter-spacing: 0.06em; color: var(--sand); margin-bottom: 8px; }
+    h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; text-transform: uppercase; font-size: clamp(42px, 8vw, 68px); color: var(--cream-bright); text-align: center; line-height: 0.95; margin-bottom: 4px; letter-spacing: 0.04em; }
+    .lead { text-align: center; color: var(--sand); font-size: 16px; margin-bottom: 32px; }
+
+    .card { background: rgba(43,22,26,0.35); border: 1px solid rgba(239,224,191,0.18); border-radius: 6px; padding: 32px; }
+    form { display: grid; gap: 14px; }
+    label { text-transform: uppercase; letter-spacing: 0.1em; font-size: 12px; font-weight: 600; color: var(--gold); margin-bottom: -8px; }
+    input, textarea, select {
+      width: 100%; padding: 13px 15px; border-radius: 4px; font-family: Georgia, 'Times New Roman', serif; font-size: 15px;
+      border: 1px solid rgba(239,224,191,0.28); background: rgba(239,224,191,0.06); color: var(--cream-bright);
+    }
+    input::placeholder, textarea::placeholder { color: rgba(239,224,191,0.45); }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--gold); }
+    select option { color: var(--ink); }
+    .btn {
+      cursor: pointer; border: 2px solid var(--cream-bright); font-family: Georgia, 'Times New Roman', serif; font-weight: 400;
+      text-transform: uppercase; letter-spacing: 0.14em; font-size: 14px; padding: 15px; border-radius: 3px;
+      background: var(--gold); color: var(--maroon-deep); transition: background 0.2s, transform 0.16s; margin-top: 8px;
+    }
+    .btn:hover { background: #e6d5b3; transform: translateY(-2px); }
+    .contact-line { text-align: center; margin-top: 24px; color: var(--sand); font-size: 15px; }
+    .contact-line a { color: var(--gold); text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="mark">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e9b64d"/><stop offset="42%" stop-color="#d98a3c"/>
+            <stop offset="74%" stop-color="#c1552a"/><stop offset="100%" stop-color="#94293a"/>
+          </linearGradient>
+          <clipPath id="disc"><circle cx="120" cy="120" r="80"/></clipPath>
+        </defs>
+        <circle cx="120" cy="120" r="116" fill="#efe0bf"/>
+        <circle cx="120" cy="120" r="116" fill="none" stroke="#7a1c2b" stroke-width="8"/>
+        <g clip-path="url(#disc)">
+          <circle cx="120" cy="120" r="80" fill="url(#sky)"/>
+          <circle cx="120" cy="98" r="20" fill="#f6ecd3" stroke="#7a1c2b" stroke-width="1.5"/>
+          <path d="M 105,90 Q 120,98 135,90" fill="none" stroke="#b23a2e" stroke-width="1.6"/>
+          <path d="M 105,106 Q 120,98 135,106" fill="none" stroke="#b23a2e" stroke-width="1.6"/>
+          <path d="M 40,160 L 70,132 L 96,154 L 120,130 L 150,156 L 178,134 L 204,160 L 204,205 L 40,205 Z" fill="#6d1a29"/>
+          <path d="M 40,176 Q 120,166 204,176 L 204,205 L 40,205 Z" fill="#cdb488"/>
+          <g fill="#7a1c2b">
+            <rect x="148" y="136" width="8" height="46" rx="4"/><rect x="137" y="150" width="12" height="6" rx="3"/>
+            <rect x="137" y="140" width="6" height="16" rx="3"/><rect x="155" y="156" width="12" height="6" rx="3"/>
+            <rect x="161" y="146" width="6" height="16" rx="3"/>
+          </g>
+        </g>
+        <circle cx="120" cy="120" r="80" fill="none" stroke="#7a1c2b" stroke-width="5"/>
+      </svg>
+      <span class="txt">480 Hitting Co.</span>
+    </a>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/book">Reserve</a>
+    </nav>
+  </header>
+
+  <div class="content">
+    <div class="est">EST. 2026 · MESA, ARIZONA</div>
+    <h1>Inquiries</h1>
+    <p class="lead">Tell us your level and what you're chasing. We'll reach out to get you in the lane.</p>
+
+    <div class="card">
+      <form onsubmit="event.preventDefault(); this.reset(); alert('Thanks, we\'ll be in touch shortly.');">
+        <label for="name">Name</label>
+        <input id="name" type="text" placeholder="Full name" required />
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@email.com" required />
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" placeholder="(480) 000-0000" />
+        <label for="level">Level</label>
+        <select id="level">
+          <option value="">Select…</option>
+          <option>High School</option>
+          <option>College</option>
+          <option>Professional</option>
+          <option>Team / Organization</option>
+        </select>
+        <button type="submit" class="btn">Send Inquiry</button>
+      </form>
+    </div>
+
+    <p class="contact-line">Or reach us directly at <a href="mailto:info@480hitting.co">info@480hitting.co</a></p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>480 Hitting Co. · Mesa, Arizona</title>
+  <meta name="description" content="A private, one-lane hitting facility in Mesa, Arizona built for college and professional ballplayers." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Yellowtail&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red: #7a1c2b;          /* warmer brick red */
+      --red-deep: #56121e;
+      --red-light: #94293a;
+      --cream: #efe0bf;
+      --cream-bright: #f6ecd3;
+      --sand: #d8c199;
+      --gold: #d9c39c;
+      --rust: #c15a2c;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif; color: var(--cream);
+      height: 100vh; overflow: hidden; position: relative;
+      background:
+        radial-gradient(120% 80% at 50% -12%, rgba(221,166,63,0.28) 0%, rgba(193,90,44,0.14) 32%, rgba(86,18,30,0) 62%),
+        linear-gradient(180deg, #8a2434 0%, #6d1a29 55%, #56121e 100%);
+    }
+    /* film-grain grit */
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 6; opacity: 0.10;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    /* desert skyline */
+    .skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 190px; z-index: 2; pointer-events: none; }
+    .skyline svg { width: 100%; height: 100%; display: block; }
+
+    /* faint baseball diamond */
+    .diamond {
+      position: absolute; left: 50%; top: calc(50% + 66px); transform: translate(-50%, -69.4%);
+      width: clamp(700px, 120vw, 1700px); z-index: 1; pointer-events: none; opacity: 0.10;
+    }
+    .diamond svg { width: 100%; height: auto; display: block; }
+
+    /* ---------- HEADER ---------- */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 38px; border-bottom: 1px solid rgba(239,224,191,0.14);
+    }
+    .est { font-family: Georgia, 'Times New Roman', serif; font-size: 13px; letter-spacing: 0.04em; color: var(--sand); opacity: 0.9; }
+    .nav { display: flex; gap: 28px; }
+    .nav a {
+      text-decoration: none; color: var(--cream); font-weight: 400;
+      font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.82; transition: opacity 0.2s, color 0.2s;
+    }
+    .nav a:hover { opacity: 1; color: var(--gold); }
+
+    /* ---------- STAGE ---------- */
+    .stage {
+      position: relative; z-index: 3; height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 24px 24px 90px;
+    }
+    .emblem { width: clamp(120px, 20vw, 158px); height: auto; margin-bottom: 14px; }
+
+    .the {
+      font-family: 'Yellowtail', cursive; font-size: clamp(34px, 6vw, 58px);
+      color: var(--gold); line-height: 0.8; margin-bottom: 2px; transform: rotate(-4deg);
+    }
+    .wordmark {
+      font-family: 'Alfa Slab One', serif; text-transform: uppercase; white-space: nowrap;
+      line-height: 0.95; color: var(--cream-bright); margin-bottom: 26px;
+      font-size: clamp(24px, 7.6vw, 92px); letter-spacing: -0.015em;
+    }
+    .wordmark .l2 { color: var(--gold); }
+
+    /* baseball stitch divider */
+    .stitch { display: flex; align-items: center; gap: 14px; margin-bottom: 36px; }
+    .stitch .line { width: clamp(60px, 10vw, 120px); height: 1.5px; background: rgba(239,224,191,0.4); }
+    .stitch svg { width: 46px; height: 18px; }
+
+    .buttons { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      display: inline-block; text-decoration: none; cursor: pointer;
+      font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; font-size: 14px;
+      padding: 15px 44px; border-radius: 3px; min-width: 178px; transition: transform 0.16s, background 0.2s;
+    }
+    .btn.primary { background: var(--gold); color: var(--red-deep); border: 2px solid var(--cream-bright); }
+    .btn.primary:hover { transform: translateY(-3px); background: #e6d5b3; }
+    .btn.outline { background: transparent; border: 2px solid var(--cream); color: var(--cream); }
+    .btn.outline:hover { transform: translateY(-3px); background: var(--cream); color: var(--red-deep); }
+
+    @media (max-width: 560px) {
+      header { padding: 14px 20px; }
+      .est { font-size: 10px; }
+      .nav { gap: 16px; }
+      .nav a { font-size: 11px; letter-spacing: 0.1em; }
+      .btn { padding: 14px 28px; min-width: 150px; }
+      .skyline { height: 130px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="est">EST. 2026 · MESA, AZ</span>
+    <nav class="nav">
+      <a href="/about">About</a>
+      <a href="/inquiries">Inquiries</a>
+      <a href="/book">Reserve</a>
+    </nav>
+  </header>
+
+  <!-- faint baseball diamond -->
+  <div class="diamond" aria-hidden="true">
+    <svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#efe0bf" stroke-width="2">
+      <!-- foul lines: from the top corners of home plate through 1B/3B out to the outfield -->
+      <line x1="511" y1="549" x2="1115" y2="0"/>
+      <line x1="489" y1="549" x2="-115" y2="0"/>
+      <!-- base paths: 1B to 2B to 3B (home-to-corner legs are the foul lines) -->
+      <path d="M 642,430 L 500,300 L 358,430"/>
+      <!-- bases, sitting on the foul lines -->
+      <rect x="632" y="420" width="20" height="20" transform="rotate(45 642 430)" fill="#efe0bf" stroke="none"/>
+      <rect x="490" y="290" width="20" height="20" transform="rotate(45 500 300)" fill="#efe0bf" stroke="none"/>
+      <rect x="348" y="420" width="20" height="20" transform="rotate(45 358 430)" fill="#efe0bf" stroke="none"/>
+      <!-- home plate -->
+      <path d="M 489,549 L 511,549 L 511,560 L 500,570 L 489,560 Z" fill="#efe0bf" stroke="none"/>
+      <!-- batter's boxes -->
+      <rect x="462" y="540" width="16" height="34" stroke-width="1.5"/>
+      <rect x="522" y="540" width="16" height="34" stroke-width="1.5"/>
+    </svg>
+  </div>
+
+  <div class="stage">
+    <!-- vintage Arizona roundel -->
+    <svg class="emblem" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="480 Hitting Co. emblem">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e9b64d"/>
+          <stop offset="42%" stop-color="#d98a3c"/>
+          <stop offset="74%" stop-color="#c1552a"/>
+          <stop offset="100%" stop-color="#94293a"/>
+        </linearGradient>
+        <clipPath id="disc"><circle cx="120" cy="120" r="80"/></clipPath>
+        <path id="arcTop" d="M 29,120 a 91,91 0 1,1 182,0" fill="none"/>
+        <path id="arcBot" d="M 20,120 a 100,100 0 0,0 200,0" fill="none"/>
+      </defs>
+
+      <circle cx="120" cy="120" r="116" fill="#efe0bf"/>
+
+      <!-- curved text -->
+      <text font-family="Oswald, sans-serif" font-weight="700" font-size="14" letter-spacing="2.6" fill="#7a1c2b">
+        <textPath href="#arcTop" startOffset="50%" text-anchor="middle">480 HITTING CO.</textPath>
+      </text>
+      <text font-family="Oswald, sans-serif" font-weight="600" font-size="12.5" letter-spacing="2.4" fill="#7a1c2b">
+        <textPath href="#arcBot" startOffset="50%" text-anchor="middle">MESA · ARIZONA</textPath>
+      </text>
+
+      <!-- desert scene -->
+      <g clip-path="url(#disc)">
+        <circle cx="120" cy="120" r="80" fill="url(#sky)"/>
+        <g stroke="#efe0bf" stroke-width="2" opacity="0.35">
+          <line x1="120" y1="96" x2="120" y2="60"/>
+          <line x1="120" y1="96" x2="92" y2="70"/>
+          <line x1="120" y1="96" x2="148" y2="70"/>
+          <line x1="120" y1="96" x2="80" y2="86"/>
+          <line x1="120" y1="96" x2="160" y2="86"/>
+        </g>
+        <circle cx="120" cy="98" r="20" fill="#f6ecd3" stroke="#7a1c2b" stroke-width="1.5"/>
+        <path d="M 105,90 Q 120,98 135,90" fill="none" stroke="#b23a2e" stroke-width="1.6"/>
+        <path d="M 105,106 Q 120,98 135,106" fill="none" stroke="#b23a2e" stroke-width="1.6"/>
+        <path d="M 40,160 L 70,132 L 96,154 L 120,130 L 150,156 L 178,134 L 204,160 L 204,205 L 40,205 Z" fill="#6d1a29"/>
+        <path d="M 40,176 Q 120,166 204,176 L 204,205 L 40,205 Z" fill="#cdb488"/>
+        <g fill="#7a1c2b">
+          <rect x="148" y="136" width="8" height="46" rx="4"/>
+          <rect x="137" y="150" width="12" height="6" rx="3"/>
+          <rect x="137" y="140" width="6" height="16" rx="3"/>
+          <rect x="155" y="156" width="12" height="6" rx="3"/>
+          <rect x="161" y="146" width="6" height="16" rx="3"/>
+        </g>
+      </g>
+      <circle cx="120" cy="120" r="80" fill="none" stroke="#7a1c2b" stroke-width="4"/>
+
+      <text x="18" y="125" font-size="14" fill="#7a1c2b" text-anchor="middle">★</text>
+      <text x="222" y="125" font-size="14" fill="#7a1c2b" text-anchor="middle">★</text>
+    </svg>
+
+    <div class="the">The</div>
+    <div class="wordmark"><span class="l1">480</span> <span class="l2">Hitting Co.</span></div>
+
+    <!-- baseball stitch divider -->
+    <div class="stitch" aria-hidden="true">
+      <span class="line"></span>
+      <svg viewBox="0 0 46 18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 2,9 Q 12,2 23,9 Q 34,16 44,9" fill="none" stroke="rgba(239,224,191,0.5)" stroke-width="1.5"/>
+        <g stroke="#d9c39c" stroke-width="1.6" stroke-linecap="round">
+          <line x1="8" y1="3" x2="12" y2="9"/>
+          <line x1="12" y1="3" x2="8" y2="9"/>
+          <line x1="21" y1="5" x2="25" y2="11"/>
+          <line x1="25" y1="5" x2="21" y2="11"/>
+          <line x1="34" y1="8" x2="38" y2="14"/>
+          <line x1="38" y1="8" x2="34" y2="14"/>
+        </g>
+      </svg>
+      <span class="line"></span>
+    </div>
+
+    <div class="buttons">
+      <a href="/book" class="btn primary">Reserve Time</a>
+      <a href="/inquiries" class="btn outline">Inquiries</a>
+    </div>
+  </div>
+
+  <!-- desert Arizona skyline -->
+  <div class="skyline">
+    <svg viewBox="0 0 1440 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- back ridge -->
+      <path d="M0,96 L150,70 L300,92 L470,64 L640,98 L820,68 L1000,100 L1180,72 L1330,96 L1440,80 L1440,190 L0,190 Z" fill="#8c3242"/>
+      <!-- saguaros on the ridge -->
+      <g fill="#5e1b2a">
+        <g transform="translate(250,96)">
+          <rect x="-5" y="-58" width="10" height="58" rx="5"/><rect x="-20" y="-38" width="15" height="8" rx="4"/>
+          <rect x="-20" y="-54" width="8" height="18" rx="4"/><rect x="5" y="-46" width="15" height="8" rx="4"/><rect x="12" y="-60" width="8" height="18" rx="4"/>
+        </g>
+        <g transform="translate(760,100) scale(0.85)">
+          <rect x="-5" y="-58" width="10" height="58" rx="5"/><rect x="-20" y="-40" width="15" height="8" rx="4"/>
+          <rect x="-20" y="-56" width="8" height="18" rx="4"/><rect x="5" y="-44" width="15" height="8" rx="4"/><rect x="12" y="-58" width="8" height="18" rx="4"/>
+        </g>
+        <g transform="translate(1200,96) scale(1.1)">
+          <rect x="-5" y="-54" width="10" height="54" rx="5"/><rect x="6" y="-40" width="14" height="8" rx="4"/><rect x="13" y="-54" width="8" height="16" rx="4"/>
+        </g>
+      </g>
+      <!-- front mesa -->
+      <path d="M0,150 L240,138 L470,156 L720,140 L980,158 L1240,142 L1440,156 L1440,190 L0,190 Z" fill="#6b2233"/>
+    </svg>
+  </div>
+</body>
+</html>

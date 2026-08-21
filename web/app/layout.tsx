@@ -39,8 +39,9 @@ export default function RootLayout({
         <footer className="site-footer">
           <span>© 2026 480 Hitting Co. · Mesa, AZ</span>
           <span>
-            {/* At launch, point to https://480hitting.co */}
-            <a href="http://localhost:4810">Main Site</a>
+            <a href="/">Home</a>
+            {" · "}
+            <a href="/about">About</a>
             {" · "}
             <Link href="/admin">Staff</Link>
           </span>

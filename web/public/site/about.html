@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About · 480 Hitting Co.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Yellowtail&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --maroon: #7a1c2b; --maroon-deep: #56121e; --maroon-light: #94293a;
+      --cream: #efe0bf; --cream-bright: #f6ecd3; --sand: #d8c199; --gold: #d9c39c; --rust: #c15a2c; --ink: #2a161a;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif; color: var(--cream); min-height: 100vh; position: relative;
+      background:
+        radial-gradient(120% 55% at 50% -6%, rgba(217,195,156,0.16) 0%, rgba(193,90,44,0.10) 32%, rgba(86,18,30,0) 58%),
+        linear-gradient(180deg, #8a2434 0%, #6d1a29 55%, #56121e 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0.09;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+    header {
+      position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 38px; border-bottom: 1px solid rgba(239,224,191,0.14);
+    }
+    .mark { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .mark svg { width: 42px; height: 42px; }
+    .mark .txt { font-family: 'Alfa Slab One', serif; font-size: 17px; letter-spacing: 0.01em; color: var(--cream-bright); text-transform: uppercase; }
+    .nav { display: flex; gap: 26px; }
+    .nav a { text-decoration: none; color: var(--cream); font-weight: 400; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.82; transition: opacity 0.2s, color 0.2s; }
+    .nav a:hover { opacity: 1; color: var(--gold); }
+
+    .wrap { position: relative; z-index: 3; max-width: 900px; margin: 0 auto; padding: 46px 24px 74px; }
+    .est { font-family: Georgia, 'Times New Roman', serif; text-align: center; font-size: 13px; letter-spacing: 0.06em; color: var(--sand); margin-bottom: 8px; }
+    h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; text-transform: uppercase; font-size: clamp(46px, 8vw, 74px); color: var(--cream-bright); text-align: center; line-height: 0.95; margin-bottom: 24px; letter-spacing: 0.04em; }
+    .intro { font-size: 18px; color: var(--cream-bright); text-align: center; max-width: 660px; margin: 0 auto 64px; line-height: 1.75; }
+    .intro strong { color: var(--gold); }
+
+    /* ---------- TRAJEKT FEATURE ---------- */
+    .feature { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: center; margin-bottom: 72px; }
+    .feature .label { font-family: Georgia, 'Times New Roman', serif; font-size: 13px; letter-spacing: 0.14em; color: var(--sand); text-transform: uppercase; margin-bottom: 6px; }
+    .feature h2 { font-family: 'Yellowtail', cursive; font-size: clamp(44px, 6vw, 64px); color: var(--gold); line-height: 1; margin-bottom: 18px; transform: rotate(-2deg); }
+    .feature p { font-size: 16px; color: var(--cream-bright); line-height: 1.7; margin-bottom: 18px; }
+    .feature ul { list-style: none; display: grid; gap: 10px; }
+    .feature li { font-size: 15px; color: var(--sand); padding-left: 26px; position: relative; }
+    .feature li::before { content: "⚾"; position: absolute; left: 0; }
+
+    /* ---------- MEDIA SLOTS ---------- */
+    .media {
+      position: relative; border-radius: 8px; overflow: hidden; background: #2b0f16;
+      border: 3px solid var(--cream-bright); aspect-ratio: 4 / 3;
+    }
+    .media img, .media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .media .ph {
+      display: none; position: absolute; inset: 0; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 16px; color: var(--sand); background: repeating-linear-gradient(45deg, rgba(239,224,191,0.05) 0 12px, transparent 12px 24px);
+      border: 2px dashed rgba(239,224,191,0.35); margin: 6px; border-radius: 4px;
+    }
+    .media.empty .ph { display: flex; }
+    .media .ph .ico { font-size: 30px; margin-bottom: 8px; }
+    .media .ph .t { font-family: Georgia, 'Times New Roman', serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; font-size: 13px; }
+    .media .ph .f { font-family: Georgia, 'Times New Roman', serif; font-size: 11px; opacity: 0.7; margin-top: 6px; }
+
+    .gallery-title { font-family: 'Yellowtail', cursive; font-size: clamp(38px, 6vw, 54px); color: var(--gold); text-align: center; margin-bottom: 4px; transform: rotate(-2deg); }
+    .gallery-sub { font-family: Georgia, 'Times New Roman', serif; text-align: center; font-size: 13px; letter-spacing: 0.06em; color: var(--sand); margin-bottom: 30px; }
+    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 60px; }
+
+    .cta { text-align: center; }
+    .btn {
+      display: inline-block; text-decoration: none; cursor: pointer; font-family: Georgia, 'Times New Roman', serif; font-weight: 400;
+      text-transform: uppercase; letter-spacing: 0.14em; font-size: 14px; padding: 15px 44px; border-radius: 3px;
+      background: var(--gold); color: var(--maroon-deep); border: 2px solid var(--cream-bright); transition: background 0.2s, transform 0.16s;
+    }
+    .btn:hover { background: #e6d5b3; transform: translateY(-3px); }
+
+    @media (max-width: 720px) {
+      header { padding: 12px 20px; } .mark .txt { display: none; }
+      .feature { grid-template-columns: 1fr; gap: 22px; }
+      .gallery { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="mark">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e9b64d"/><stop offset="42%" stop-color="#d98a3c"/>
+            <stop offset="74%" stop-color="#c1552a"/><stop offset="100%" stop-color="#94293a"/>
+          </linearGradient>
+          <clipPath id="disc"><circle cx="120" cy="120" r="80"/></clipPath>
+        </defs>
+        <circle cx="120" cy="120" r="116" fill="#efe0bf"/>
+        <circle cx="120" cy="120" r="116" fill="none" stroke="#7a1c2b" stroke-width="8"/>
+        <g clip-path="url(#disc)">
+          <circle cx="120" cy="120" r="80" fill="url(#sky)"/>
+          <circle cx="120" cy="98" r="20" fill="#f6ecd3" stroke="#7a1c2b" stroke-width="1.5"/>
+          <path d="M 105,90 Q 120,98 135,90" fill="none" stroke="#b23a2e" stroke-width="1.6"/>
+          <path d="M 105,106 Q 120,98 135,106" fill="none" stroke="#b23a2e" stroke-width="1.6"/>
+          <path d="M 40,160 L 70,132 L 96,154 L 120,130 L 150,156 L 178,134 L 204,160 L 204,205 L 40,205 Z" fill="#6d1a29"/>
+          <path d="M 40,176 Q 120,166 204,176 L 204,205 L 40,205 Z" fill="#cdb488"/>
+          <g fill="#7a1c2b">
+            <rect x="148" y="136" width="8" height="46" rx="4"/><rect x="137" y="150" width="12" height="6" rx="3"/>
+            <rect x="137" y="140" width="6" height="16" rx="3"/><rect x="155" y="156" width="12" height="6" rx="3"/>
+            <rect x="161" y="146" width="6" height="16" rx="3"/>
+          </g>
+        </g>
+        <circle cx="120" cy="120" r="80" fill="none" stroke="#7a1c2b" stroke-width="5"/>
+      </svg>
+      <span class="txt">480 Hitting Co.</span>
+    </a>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/inquiries">Inquiries</a>
+      <a href="/book">Reserve</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div class="est">EST. 2026 · MESA, ARIZONA</div>
+    <h1>About</h1>
+
+    <p class="intro">
+      480 Hitting Co. isn't a batting cage. It's a <strong>private hitting lab</strong>.
+      One dedicated lane in Mesa, Arizona, built exclusively for college and professional hitters
+      who want every rep to count. No crowds. No waiting. No guesswork. Just you, your coach,
+      and the most advanced hitting technology in the game.
+    </p>
+
+    <!-- TRAJEKT FEATURE -->
+    <div class="feature">
+      <div class="copy">
+        <div class="label">The Difference</div>
+        <h2>Powered by Trajekt</h2>
+        <p>
+          Our lane is built around the <strong>Trajekt Arc</strong>, the same robotic pitching system
+          used by Major League clubs. It recreates any pitcher's exact arsenal with real velocity,
+          real movement, and a true release point, projected life size so you see the ball leave the
+          pitcher's hand.
+        </p>
+        <ul>
+          <li>Face any MLB or opposing arm on demand</li>
+          <li>Real spin, break, and velocity, up to the highest levels</li>
+          <li>Life size video release for true timing</li>
+          <li>Scout the exact pitcher you see next week</li>
+        </ul>
+      </div>
+      <!-- Trajekt feature media: replace src with your file in /assets -->
+      <figure class="media" data-file="assets/trajekt.jpg">
+        <img src="assets/trajekt.jpg" alt="Trajekt system in the lane"
+             onerror="this.style.display='none'; this.closest('.media').classList.add('empty');" />
+        <div class="ph">
+          <div class="ico">🎥</div>
+          <div class="t">Add Trajekt photo or video</div>
+          <div class="f">assets/trajekt.jpg</div>
+        </div>
+      </figure>
+    </div>
+
+    <!-- GALLERY -->
+    <div class="gallery-title">See It In Action</div>
+    <div class="gallery-sub">DROP YOUR OWN PHOTOS &amp; VIDEOS BELOW</div>
+    <div class="gallery">
+      <figure class="media" data-file="assets/gallery-1.jpg">
+        <img src="assets/gallery-1.jpg" alt="" onerror="this.style.display='none'; this.closest('.media').classList.add('empty');" />
+        <div class="ph"><div class="ico">📸</div><div class="t">Add photo</div><div class="f">assets/gallery-1.jpg</div></div>
+      </figure>
+      <figure class="media" data-file="assets/gallery-2.mp4">
+        <video src="assets/gallery-2.mp4" muted playsinline
+               onerror="this.style.display='none'; this.closest('.media').classList.add('empty');"></video>
+        <div class="ph"><div class="ico">🎬</div><div class="t">Add video</div><div class="f">assets/gallery-2.mp4</div></div>
+      </figure>
+      <figure class="media" data-file="assets/gallery-3.jpg">
+        <img src="assets/gallery-3.jpg" alt="" onerror="this.style.display='none'; this.closest('.media').classList.add('empty');" />
+        <div class="ph"><div class="ico">📸</div><div class="t">Add photo</div><div class="f">assets/gallery-3.jpg</div></div>
+      </figure>
+    </div>
+
+    <div class="cta"><a href="/book" class="btn">Get in the Lane</a></div>
+  </div>
+</body>
+</html>
