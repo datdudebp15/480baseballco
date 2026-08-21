@@ -15,11 +15,14 @@ const nextConfig = {
       beforeFiles: [
         { source: "/", destination: "/site/index.html" },
         { source: "/about", destination: "/site/about.html" },
-        { source: "/inquiries", destination: "/site/inquiries.html" },
       ],
       afterFiles: [],
       fallback: [],
     };
+  },
+  // Inquiries now go through the personal-membership contact page.
+  async redirects() {
+    return [{ source: "/inquiries", destination: "/signup", permanent: false }];
   },
 };
 
