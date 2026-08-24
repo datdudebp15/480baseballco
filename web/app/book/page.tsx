@@ -7,6 +7,7 @@ import {
   formatDayShort,
   formatHour,
 } from "@/lib/schedule";
+import { downloadIcs } from "@/lib/ics";
 
 type RosterEntry = { name: string; member: boolean; friend: boolean; team?: boolean };
 type Slot = {
@@ -34,6 +35,7 @@ export default function BookPage() {
   const [data, setData] = useState<Schedule | null>(null);
   const [selected, setSelected] = useState(0);
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
+  const [justBooked, setJustBooked] = useState<{ date: string; hour: number } | null>(null);
   const [busyHour, setBusyHour] = useState<number | null>(null);
   const noticeRef = useRef<HTMLDivElement | null>(null);
 
@@ -106,6 +108,7 @@ export default function BookPage() {
     });
     const result = await res.json();
     setBusyHour(null);
+    setJustBooked(res.ok ? { date: day.key, hour: slot.hour } : null);
     setNotice(
       res.ok
         ? {
@@ -151,6 +154,7 @@ export default function BookPage() {
         onClick={() => {
           setSelected(i);
           setNotice(null);
+          setJustBooked(null);
         }}
       >
         <span className="wd">{i === 0 ? "Today" : weekday}</span>
@@ -201,6 +205,17 @@ export default function BookPage() {
       {notice && (
         <div ref={noticeRef} className={`notice ${notice.kind}`}>
           {notice.text}
+          {notice.kind === "success" && justBooked && (
+            <>
+              {" "}
+              <button
+                className="link-btn"
+                onClick={() => downloadIcs(justBooked.date, justBooked.hour)}
+              >
+                📅 Add to Calendar
+              </button>
+            </>
+          )}
         </div>
       )}
 

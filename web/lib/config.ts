@@ -22,6 +22,10 @@ export const facility = {
   publicWindowDays: 7,
   teamWindowMinDays: 30, // team blocks must be placed at least this far out
 
+  // Max upcoming reservations one customer can hold at once — keeps a single
+  // member from strip-mining prime time weeks out. Staff bookings bypass it.
+  maxFutureBookings: 6,
+
   // Rates (validated against the Phoenix market — Driveline parity at $100).
   memberHourlyRate: 75,
   publicHourlyRate: 100,

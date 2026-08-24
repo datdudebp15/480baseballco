@@ -47,6 +47,25 @@ export async function POST(req: Request) {
   }
 
   const db = await getDb();
+
+  // Cap upcoming reservations per customer so nobody strip-mines the
+  // calendar weeks out. (Staff bookings via the admin API bypass this.)
+  const today = localKey(now);
+  const upcoming = await db.get<{ c: number }>(
+    `SELECT COUNT(*) AS c FROM bookings
+     WHERE user_id = ? AND status = 'confirmed'
+       AND (date > ? OR (date = ? AND hour >= ?))`,
+    [user.id, today, today, now.getHours()]
+  );
+  if (Number(upcoming?.c) >= facility.maxFutureBookings) {
+    return NextResponse.json(
+      {
+        error: `You can hold up to ${facility.maxFutureBookings} upcoming reservations at a time — cancel one or come hit first, then book more.`,
+      },
+      { status: 400 }
+    );
+  }
+
   // Intro rate: a guest account's first-ever booking is $50.
   let price = rateFor(user);
   if (!user.isMember) {

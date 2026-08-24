@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { dateFromKey, formatDayLong, formatHour } from "@/lib/schedule";
+import { downloadIcs } from "@/lib/ics";
 
 type Booking = { id: number; date: string; hour: number; price: number };
 type Person = { id: number; name: string; email: string };
@@ -310,9 +311,18 @@ export default function AccountPage() {
                   {formatDayLong(dateFromKey(b.date))} · {formatHour(b.hour)} ·
                   ${b.price}
                 </span>
-                <button className="link-btn" onClick={() => cancelBooking(b.id)}>
-                  Cancel
-                </button>
+                <span>
+                  <button
+                    className="link-btn"
+                    onClick={() => downloadIcs(b.date, b.hour)}
+                    title="Add to calendar"
+                  >
+                    📅
+                  </button>{" "}
+                  <button className="link-btn" onClick={() => cancelBooking(b.id)}>
+                    Cancel
+                  </button>
+                </span>
               </li>
             ))}
           </ul>
