@@ -790,6 +790,15 @@ a {
   text-align: left;
 }
 
+.occ-click {
+  cursor: pointer;
+}
+
+.occ-click:hover {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+
 @media (max-width: 560px) {
   .site-header {
     padding: 12px 14px;

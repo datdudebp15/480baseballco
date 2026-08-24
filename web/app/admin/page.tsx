@@ -15,6 +15,14 @@ type Stats = {
   revenue7d: number;
   members: number;
 };
+type SlotDetail = {
+  date: string;
+  hour: number;
+  bookings: { id: number; userId: number; name: string; email: string; isMember: number; price: number }[];
+  blocks: { id: number; teamName: string; units: number; note: string | null }[];
+  open: number;
+  capacity: number;
+};
 type UserRow = {
   id: number;
   name: string;
@@ -34,6 +42,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
   const [na, setNa] = useState({ name: "", email: "", phone: "", tempPassword: "", isMember: true, waiverSigned: false });
+  const [slotDetail, setSlotDetail] = useState<SlotDetail | null>(null);
   const [days, setDays] = useState<{ key: string }[]>([]);
   const [slots, setSlots] = useState<Record<string, Slot[]>>({});
   const [capacity, setCapacity] = useState(3);
@@ -56,6 +65,35 @@ export default function AdminPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function openSlot(date: string, hour: number) {
+    const res = await fetch(`/api/admin/slot?date=${date}&hour=${hour}`);
+    if (res.ok) setSlotDetail(await res.json());
+  }
+
+  async function removeBooking(id: number, name: string) {
+    const res = await fetch(`/api/admin/bookings?id=${id}`, { method: "DELETE" });
+    const data = await res.json();
+    setNotice(
+      res.ok
+        ? { kind: "success", text: `Removed ${name} from the slot.` }
+        : { kind: "error", text: data.error }
+    );
+    if (slotDetail) openSlot(slotDetail.date, slotDetail.hour);
+    load();
+  }
+
+  async function removeBlockHour(id: number, team: string) {
+    const res = await fetch(`/api/admin/blocks?id=${id}`, { method: "DELETE" });
+    const data = await res.json();
+    setNotice(
+      res.ok
+        ? { kind: "success", text: `Removed ${team}'s hold on this hour (the rest of their block is untouched).` }
+        : { kind: "error", text: data.error }
+    );
+    if (slotDetail) openSlot(slotDetail.date, slotDetail.hour);
+    load();
+  }
 
   async function createAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -197,8 +235,9 @@ export default function AdminPage() {
                   return (
                     <td
                       key={d.key}
-                      className={`occ-${Math.max(open, 0)}`}
-                      title={names || "No bookings"}
+                      className={`occ-${Math.max(open, 0)} occ-click`}
+                      title={names ? `${names} — click to manage` : "Click to manage"}
+                      onClick={() => openSlot(d.key, hour)}
                     >
                       {slot.past ? "—" : open}
                     </td>
@@ -209,6 +248,54 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      {slotDetail && (
+        <div className="card block" style={{ marginTop: 16, borderColor: "var(--red)" }}>
+          <div className="row" style={{ borderBottom: "none", padding: 0 }}>
+            <h3>
+              {formatDayShort(dateFromKey(slotDetail.date)).weekday}{" "}
+              {dateFromKey(slotDetail.date).getDate()} · {formatHour(slotDetail.hour)}{" "}
+              <span className="tag">
+                {slotDetail.open} of {slotDetail.capacity} open
+              </span>
+            </h3>
+            <button className="link-btn muted" onClick={() => setSlotDetail(null)}>
+              Close
+            </button>
+          </div>
+          {slotDetail.bookings.length === 0 && slotDetail.blocks.length === 0 ? (
+            <p style={{ marginTop: 8 }}>Nobody in this slot.</p>
+          ) : (
+            <ul className="rows">
+              {slotDetail.bookings.map((b) => (
+                <li key={`b-${b.id}`} className="row">
+                  <span>
+                    <a href={`/admin/users/${b.userId}`}>{b.name}</a>{" "}
+                    <span className={`tag ${b.isMember ? "member" : ""}`}>
+                      {b.isMember ? "Member" : "Guest"}
+                    </span>{" "}
+                    <small>${b.price}</small>
+                  </span>
+                  <button className="link-btn" onClick={() => removeBooking(b.id, b.name)}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+              {slotDetail.blocks.map((bl) => (
+                <li key={`t-${bl.id}`} className="row">
+                  <span>
+                    {bl.teamName} <span className="tag member">Team · {bl.units} spot{bl.units === 1 ? "" : "s"}</span>
+                    {bl.note ? <small> {bl.note}</small> : null}
+                  </span>
+                  <button className="link-btn" onClick={() => removeBlockHour(bl.id, bl.teamName)}>
+                    Remove this hour
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <h2 className="page-title" style={{ marginTop: 28, fontSize: 20 }}>
         Accounts
