@@ -185,6 +185,31 @@ export default function AdminUserPage() {
         >
           Reset 2FA
         </button>
+        {" · "}
+        <button
+          className="link-btn muted"
+          onClick={async () => {
+            if (
+              !window.confirm(
+                `Permanently delete ${target.name}'s account and all their bookings? This cannot be undone.`
+              )
+            )
+              return;
+            const res = await fetch("/api/admin/users", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, action: "delete" }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              setNotice({ kind: "error", text: data.error });
+              return;
+            }
+            window.location.href = "/admin";
+          }}
+        >
+          Delete account
+        </button>
       </section>
 
       <section className="card block">

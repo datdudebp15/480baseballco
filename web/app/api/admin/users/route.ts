@@ -135,6 +135,59 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  // Promote/demote staff. Guard: can't demote yourself, and the facility can
+  // never end up with zero admins.
+  if (body?.action === "setRole") {
+    const role = body?.role === "admin" ? "admin" : "user";
+    if (role === "user") {
+      if (userId === user.id) {
+        return NextResponse.json(
+          { error: "You can't remove your own staff access." },
+          { status: 400 }
+        );
+      }
+      const admins = await db.get<{ c: number }>(
+        "SELECT COUNT(*) AS c FROM users WHERE role = 'admin'"
+      );
+      if (Number(admins?.c) <= 1) {
+        return NextResponse.json(
+          { error: "There must always be at least one staff account." },
+          { status: 400 }
+        );
+      }
+    }
+    await db.run("UPDATE users SET role = ? WHERE id = ?", [role, userId]);
+    return NextResponse.json({ ok: true });
+  }
+
+  // Delete an account entirely (bookings, friendships, sessions cascade).
+  // Guard: not yourself, and never the last admin.
+  if (body?.action === "delete") {
+    if (userId === user.id) {
+      return NextResponse.json(
+        { error: "You can't delete the account you're logged in as." },
+        { status: 400 }
+      );
+    }
+    const targetRow = await db.get<{ role: string }>(
+      "SELECT role FROM users WHERE id = ?",
+      [userId]
+    );
+    if (targetRow?.role === "admin") {
+      const admins = await db.get<{ c: number }>(
+        "SELECT COUNT(*) AS c FROM users WHERE role = 'admin'"
+      );
+      if (Number(admins?.c) <= 1) {
+        return NextResponse.json(
+          { error: "There must always be at least one staff account." },
+          { status: 400 }
+        );
+      }
+    }
+    await db.run("DELETE FROM users WHERE id = ?", [userId]);
+    return NextResponse.json({ ok: true });
+  }
+
   const isMember = body?.isMember ? 1 : 0;
   await db.run("UPDATE users SET is_member = ? WHERE id = ?", [isMember, userId]);
   return NextResponse.json({ ok: true });
