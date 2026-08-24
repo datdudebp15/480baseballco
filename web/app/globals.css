@@ -307,6 +307,66 @@ a {
   color: var(--cream);
 }
 
+.day-chip .avail {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--green);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.day-chip .avail.full {
+  color: var(--red-light);
+}
+
+.day-chip.selected .avail {
+  color: var(--cream);
+  opacity: 0.85;
+}
+
+.month-chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 10px 6px;
+  font-family: var(--font-head), sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  writing-mode: vertical-rl;
+  border-left: 2px solid var(--sand);
+}
+
+.day-heading {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+/* ---------- Loading skeleton ---------- */
+@keyframes shimmer {
+  0% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+  100% { opacity: 0.45; }
+}
+
+.ghost {
+  background: var(--line);
+  border-radius: 10px;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+
+.ghost-chip {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+}
+
+.ghost-slot {
+  height: 130px;
+}
+
 .notice {
   border-radius: 8px;
   padding: 12px 16px;
