@@ -14,8 +14,7 @@ export default function SignupPage() {
         personally, not online.
       </p>
       <p style={{ fontSize: 17, lineHeight: 1.6, marginBottom: 20 }}>
-        Please reach out to <strong>{facility.ownerName}</strong> to set up
-        your membership:
+        Please reach out to set up your membership:
       </p>
       <a
         href={`tel:${facility.phoneTel}`}

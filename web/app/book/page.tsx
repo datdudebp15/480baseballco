@@ -111,9 +111,8 @@ export default function BookPage() {
 
       {!user && (
         <div className="notice info">
-          <a href="/login?next=/book">Log in</a> to book. New to 480? Reach
-          out to Warren Holzemer at{" "}
-          <a href="tel:+17037555977">(703) 755-5977</a> to set up your
+          <a href="/login?next=/book">Log in</a> to book. New to 480? Call or
+          text <a href="tel:+17037555977">(703) 755-5977</a> to set up your
           membership — <a href="/signup">details here</a>.
         </div>
       )}

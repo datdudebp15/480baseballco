@@ -22,8 +22,7 @@ export default function MembershipPage() {
           <li>Add friends and book times together</li>
         </ul>
         <p style={{ marginBottom: 18, fontSize: 15, lineHeight: 1.6 }}>
-          Membership is set up personally. Reach out to{" "}
-          <strong>{facility.ownerName}</strong> for details and pricing:
+          Membership is set up personally. Reach out for details and pricing:
         </p>
         <a href={`tel:${facility.phoneTel}`} className="btn">
           Call or Text {facility.phoneDisplay}

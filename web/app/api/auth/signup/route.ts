@@ -8,7 +8,7 @@ import { facility } from "@/lib/config";
 export async function POST() {
   return NextResponse.json(
     {
-      error: `Accounts are set up personally — please reach out to ${facility.ownerName} at ${facility.phoneDisplay} to set up your membership.`,
+      error: `Accounts are set up personally — please call or text ${facility.phoneDisplay} to set up your membership.`,
     },
     { status: 403 }
   );
