@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb, slotUsage } from "@/lib/db";
+import { audit, getDb, slotUsage } from "@/lib/db";
 import { getUser, rowToUser } from "@/lib/auth";
 import { facility } from "@/lib/config";
 import { localKey } from "@/lib/schedule";
@@ -37,7 +37,8 @@ export async function GET(req: Request) {
 // Staff-only: book a slot on a customer's behalf. Booking windows do not
 // apply (front-desk override) but capacity and duplicates still do.
 export async function POST(req: Request) {
-  if (!(await requireAdmin())) {
+  const admin = await requireAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Staff only." }, { status: 403 });
   }
   const body = await req.json().catch(() => null);
@@ -87,6 +88,7 @@ export async function POST(req: Request) {
       );
       return created!.id;
     });
+    await audit(db, admin.email, "booking.add", `${target.name} -> ${date} ${hour}:00`);
     return NextResponse.json({ id, price });
   } catch (e) {
     const msg = (e as Error).message;
@@ -105,7 +107,8 @@ export async function POST(req: Request) {
 
 // Staff-only: cancel any booking, no 24-hour restriction.
 export async function DELETE(req: Request) {
-  if (!(await requireAdmin())) {
+  const admin = await requireAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Staff only." }, { status: 403 });
   }
   const id = Number(new URL(req.url).searchParams.get("id"));
@@ -117,5 +120,6 @@ export async function DELETE(req: Request) {
   if (changes === 0) {
     return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   }
+  await audit(db, admin.email, "booking.cancel", `booking #${id}`);
   return NextResponse.json({ ok: true });
 }

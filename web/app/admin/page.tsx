@@ -30,8 +30,12 @@ type UserRow = {
   phone: string | null;
   role: string;
   isMember: number;
+  memberSince: string | null;
   upcoming: number;
 };
+type AuditEntry = { actorEmail: string; action: string; detail: string | null; createdAt: string };
+
+const RENEWAL_DUE_DAYS = 335;
 
 const DAYS_SHOWN = 7;
 
@@ -43,6 +47,7 @@ export default function AdminPage() {
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
   const [na, setNa] = useState({ name: "", email: "", phone: "", tempPassword: "", isMember: true, waiverSigned: false });
   const [slotDetail, setSlotDetail] = useState<SlotDetail | null>(null);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [days, setDays] = useState<{ key: string }[]>([]);
   const [slots, setSlots] = useState<Record<string, Slot[]>>({});
   const [capacity, setCapacity] = useState(3);
@@ -60,6 +65,8 @@ export default function AdminPage() {
     setDays(s.days.slice(0, DAYS_SHOWN));
     setSlots(s.slots);
     setCapacity(s.capacity);
+    const a = await fetch("/api/admin/audit").then((r) => r.json());
+    setAuditEntries(a.entries ?? []);
   }, []);
 
   useEffect(() => {
@@ -151,6 +158,10 @@ export default function AdminPage() {
         Logged in as {me.name} (staff). Only staff accounts can see this page.
         {" · "}
         <a href="/admin/blocks">Manage team blocks →</a>
+        {" · "}
+        <a href="/api/admin/backup" download>
+          Download backup ↓
+        </a>
       </p>
 
       {stats && (
@@ -346,6 +357,7 @@ export default function AdminPage() {
               <th>Name</th>
               <th>Email</th>
               <th>Status</th>
+              <th>Member since</th>
               <th>Upcoming</th>
               <th>Membership</th>
             </tr>
@@ -363,6 +375,28 @@ export default function AdminPage() {
                     {u.isMember ? "Member" : "Guest"}
                   </span>
                 </td>
+                <td>
+                  {u.isMember && u.memberSince ? (
+                    <>
+                      {new Date(u.memberSince).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                      {(Date.now() - new Date(u.memberSince).getTime()) / 86400000 >
+                        RENEWAL_DUE_DAYS && (
+                        <>
+                          {" "}
+                          <span className="tag" style={{ background: "var(--red)", color: "var(--cream)" }}>
+                            Renewal due
+                          </span>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td>{u.upcoming}</td>
                 <td>
                   <button className="link-btn" onClick={() => toggleMember(u)}>
@@ -379,6 +413,33 @@ export default function AdminPage() {
         out of slots. Membership toggles are the manual path until Stripe
         subscriptions go live.
       </p>
+
+      {auditEntries.length > 0 && (
+        <>
+          <h2 className="page-title" style={{ marginTop: 28, fontSize: 20 }}>
+            Recent Staff Activity
+          </h2>
+          <ul className="rows card block" style={{ padding: "8px 20px" }}>
+            {auditEntries.map((a, i) => (
+              <li key={i} className="row">
+                <span>
+                  <strong>{a.action}</strong>
+                  {a.detail ? ` — ${a.detail}` : ""}
+                  <small> · {a.actorEmail}</small>
+                </span>
+                <small>
+                  {new Date(a.createdAt).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </small>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   );
 }

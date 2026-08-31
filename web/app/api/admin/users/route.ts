@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getDb, isoNow } from "@/lib/db";
+import { audit, getDb, isoNow } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { addDays, localKey } from "@/lib/schedule";
 import { phoenixNow } from "@/lib/time";
@@ -18,6 +18,7 @@ export async function GET() {
 
   const users = await db.all(
     `SELECT u.id, u.name, u.email, u.phone, u.role, u.is_member AS "isMember",
+            u.member_since AS "memberSince",
             (SELECT COUNT(*) FROM bookings b
               WHERE b.user_id = u.id AND b.status = 'confirmed' AND b.date >= ?) AS upcoming
      FROM users u ORDER BY u.name`,
@@ -91,8 +92,8 @@ export async function POST(req: Request) {
       );
     }
     const created = await db.get<{ id: number }>(
-      `INSERT INTO users (email, name, phone, password_hash, is_member, waiver_accepted_at)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+      `INSERT INTO users (email, name, phone, password_hash, is_member, waiver_accepted_at, member_since)
+       VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         email,
         name,
@@ -100,8 +101,10 @@ export async function POST(req: Request) {
         bcrypt.hashSync(tempPassword, 10),
         isMember,
         waiverSigned ? isoNow() : null,
+        isMember ? isoNow() : null,
       ]
     );
+    await audit(db, user.email, "account.create", `${name} <${email}> as ${isMember ? "member" : "guest"}`);
     return NextResponse.json({ id: created!.id });
   }
 
@@ -124,6 +127,7 @@ export async function POST(req: Request) {
       userId,
     ]);
     await db.run("DELETE FROM sessions WHERE user_id = ?", [userId]);
+    await audit(db, user.email, "account.temp_password", `user #${userId}`);
     return NextResponse.json({ ok: true });
   }
 
@@ -132,6 +136,7 @@ export async function POST(req: Request) {
       "UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?",
       [userId]
     );
+    await audit(db, user.email, "account.reset_2fa", `user #${userId}`);
     return NextResponse.json({ ok: true });
   }
 
@@ -157,6 +162,7 @@ export async function POST(req: Request) {
       }
     }
     await db.run("UPDATE users SET role = ? WHERE id = ?", [role, userId]);
+    await audit(db, user.email, "account.set_role", `user #${userId} -> ${role}`);
     return NextResponse.json({ ok: true });
   }
 
@@ -185,10 +191,15 @@ export async function POST(req: Request) {
       }
     }
     await db.run("DELETE FROM users WHERE id = ?", [userId]);
+    await audit(db, user.email, "account.delete", `user #${userId}`);
     return NextResponse.json({ ok: true });
   }
 
   const isMember = body?.isMember ? 1 : 0;
-  await db.run("UPDATE users SET is_member = ? WHERE id = ?", [isMember, userId]);
+  await db.run(
+    "UPDATE users SET is_member = ?, member_since = CASE WHEN ? = 1 THEN ? ELSE NULL END WHERE id = ?",
+    [isMember, isMember, isoNow(), userId]
+  );
+  await audit(db, user.email, "account.membership", `user #${userId} -> ${isMember ? "member" : "guest"}`);
   return NextResponse.json({ ok: true });
 }

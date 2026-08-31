@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { getDb, slotUsage, type Dbx } from "@/lib/db";
+import { audit, getDb, slotUsage, type Dbx } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { facility } from "@/lib/config";
 import { addDays, localKey } from "@/lib/schedule";
@@ -33,7 +33,8 @@ export async function GET() {
 // Rules: team time is placed >= 30 days out (override with confirmation);
 // a block only consumes units still open — it never displaces bookings.
 export async function POST(req: Request) {
-  if (!(await requireAdmin())) {
+  const admin = await requireAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Staff only." }, { status: 403 });
   }
   const body = await req.json().catch(() => null);
@@ -125,13 +126,20 @@ export async function POST(req: Request) {
     }
   });
 
+  await audit(
+    db,
+    admin.email,
+    "block.create",
+    `${teamName}: ${created} slots (${startDate}..${endDate}, units ${units})`
+  );
   return NextResponse.json({ batchId, created, skipped });
 }
 
 // Staff-only: remove a single block row (?id=) or a whole batch's future
 // rows (?batch=).
 export async function DELETE(req: Request) {
-  if (!(await requireAdmin())) {
+  const admin = await requireAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Staff only." }, { status: 403 });
   }
   const url = new URL(req.url);
@@ -152,5 +160,6 @@ export async function DELETE(req: Request) {
   if (changes === 0) {
     return NextResponse.json({ error: "Block not found." }, { status: 404 });
   }
+  await audit(db, admin.email, "block.remove", id ? `block row #${id}` : `batch ${batch} (${changes} rows)`);
   return NextResponse.json({ removed: changes });
 }

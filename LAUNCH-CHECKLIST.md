@@ -1,76 +1,53 @@
 # 480 Hitting Co. — Launch Checklist
 
-Goal: fully functional, public, taking real money. Updated 2026-08-18.
-Rule of thumb: **Phase 1 is all you; everything after is mostly me.**
+Updated end of August 2026. Live site: **https://480baseballco-homescoutt.vercel.app**
 
 ---
 
-## ✅ Already done (built & tested locally)
+## ✅ Done
 
-- [x] Booking engine: 21-day calendar, 3 spots/hour, member (21-day) vs public (7-day) windows enforced server-side
-- [x] Accounts, login, 2FA (authenticator app), password change, login rate-limiting
-- [x] Rates wired: $100 guest / $75 member / **$50 first session (auto)**
-- [x] Friends list + roster visibility (members see who's booked)
-- [x] Staff dashboard: stats, occupancy, account manager (move customers in/out of slots, membership toggle, temp password, 2FA reset)
-- [x] Team blocks: recurring patterns, 30-day rule with override, never displaces bookings
-- [x] Waiver acceptance at signup + DRAFT waiver/terms/privacy pages
-- [x] Arizona-pinned clock, secure production cookies, demo-purge script
-- [x] Marketing site ↔ app cross-links (localhost for now)
-- [x] Pricing validated vs market (Driveline parity; see PRD)
+**Product (all live, all tested):** booking engine (21-day member / 7-day guest windows, 3 spots/hr, no double-booking), membership-gated accounts (no self-signup — everything routes to (703) 755-5977), staff dashboard (stats, occupancy, add/delete accounts, temp passwords, 2FA resets, per-account booking manager, click-any-slot management panel), team blocks (recurring, 30-day rule, per-hour removal), friends + roster visibility, 2FA, login rate-limiting, $50 first session (auto), 6-booking cap per customer, Add-to-Calendar files, pricing hidden from the public, brand site + app on one URL, favicon/404/skeleton/month-labels/availability-counts polish.
+
+**Infrastructure:** Vercel (auto-deploys from GitHub `datdudebp15/480baseballco`), Neon Postgres, staff account = wholzemer@hrfunding.com (old default admin deleted).
 
 ---
 
-## Phase 1 — Accounts & paperwork (YOU — start now, everything else waits on these)
+## 🟥 YOU — critical path (order matters)
 
-- [ ] **Business bank account** — longest lead time; unblocks Stripe. START FIRST.
-- [ ] **Stripe account** (needs the bank account) — stripe.com, business profile
-- [ ] **Buy the domain** (480hitting.co or your pick, ~$30/yr — Cloudflare or Namecheap)
-- [ ] **Vercel account** (free) — vercel.com, sign up with GitHub or email
-- [ ] **Neon account** (free) — neon.tech → create project → copy the `postgres://…` connection string → **paste it to me in chat**
-- [ ] **Resend account** (free tier) — resend.com, for booking/confirmation emails; I'll give you 2 DNS records to add once the domain exists
-- [ ] **Lawyer**: real liability waiver + review of terms/privacy drafts
-- [ ] (Parallel, outside the app: insurance, entity/lease requirements)
+- [ ] **Business bank account → Stripe account.** Gates all payments. Longest lead time — START FIRST.
+- [ ] **2FA everywhere:** your staff login on the live site, your Vercel account, your GitHub account. Biggest real security gap left; 10 minutes total.
+- [ ] **Buy the domain** (480hitting.co, ~$30/yr) — unlocks email + the real URL.
+- [ ] **Danny meeting** — settles: membership billing (annual vs $99/mo), agency role (marketing link vs revenue share), team prime-time ceiling. Demo link is ready to send today.
+- [ ] **Lawyer:** real liability waiver + review of the draft Terms/Privacy pages.
+- [ ] **Facility photos/video** → the "Photos coming soon" tiles on /about.
+- [ ] Nice-to-haves: a **480-area-code number** (Google Voice, forwards to your phone — on-brand + local trust); free **uptime monitor** (UptimeRobot pinging `/api/health` — I'll give you the URL).
 
-## Phase 2 — Database & public deploy (ME — needs Neon + Vercel)
+## 🟨 ME — unblocked (next work block, say go)
 
-- [x] Port the data layer SQLite → Postgres *(2026-08 — dual-driver: SQLite locally, Postgres auto-activates when DATABASE_URL is set; per-slot advisory locks preserve the no-double-booking guarantee; production build verified)*
-- [x] Validate the Postgres path against the real Neon database *(2026-08-21 — full live battery green: signup+waiver, $50 first session, windows, capacity/dup, cancel, team blocks, roster privacy)*
-- [x] Deploy the app to Vercel *(live at 480baseballco-homescoutt.vercel.app; Neon Postgres attached via Vercel Storage)*
-- [x] Marketing site folded INTO the app — vintage landing at /, About + Inquiries included; one URL, no subdomain needed
-- [ ] Warren: change the staff password on the LIVE site (Account → Security) + enable 2FA — the seeded default is still active
-- [ ] Purge test/demo accounts before real launch (livetest@480check.com is in the live DB)
-- [ ] Custom domain when purchased (480hitting.co → this project)
-- **✅ Milestone reached: public URL you can send Danny — https://480baseballco-homescoutt.vercel.app**
+- [ ] **Security batch:** Next.js 16 upgrade (clears remaining advisories), rate-limit the 2FA endpoint, origin checks, staff audit log.
+- [ ] **Database backup export** (staff button) — insurance until the $19/mo Neon tier with point-in-time recovery.
+- [ ] **Member-since / renewal tracking** — so annual memberships don't silently lapse before Stripe subscriptions exist.
+- [ ] **Automated test suite** — do right before the Stripe build touches real money.
 
-## Phase 3 — Payments (ME — needs Stripe)
+## 🟦 ME — blocked on your items above
 
-- [ ] Stripe Checkout on booking (charges $50/$75/$100 correctly)
-- [ ] Saved cards (Stripe customer vault) → one-tap rebooking
-- [ ] $1,000 membership as auto-renewing subscription — **decide: annual vs $99/mo** (Danny convo)
-- [ ] ACH/bank-payment option on membership (fee capped at $5 vs ~$36 on card)
-- [ ] Webhooks: booking confirmed only when payment succeeds; auto-refund on valid (>24h) cancellation
-- [ ] Keep front-desk path: staff can still toggle membership for check/Zelle payers
-- **Milestone: the app takes real money.**
+- [ ] **Stripe build** (needs your Stripe account): pay-to-book with saved cards, membership subscriptions (+ ACH option), automatic refunds, webhooks. ~1 week of sessions. **This is "fully functional."**
+- [ ] **Email** (needs domain + free Resend account): booking confirmations, cancellations, password reset, day-before reminders.
+- [ ] **Domain wiring** (needs domain): 480hitting.co → the site, redirects from the vercel.app URL.
 
-## Phase 4 — Email (ME — needs domain + Resend)
+## 🏁 Launch gate (together, last week before opening)
 
-- [ ] Booking confirmation + cancellation + receipt emails
-- [ ] Password reset ("forgot password") flow
-- [ ] Day-before reminder emails (can slip to post-launch)
+- [ ] Swap draft legal pages for lawyer-approved text
+- [ ] **Vercel Pro upgrade ($20/mo)** — required for commercial use
+- [ ] Purge test accounts (livetest@480check.com) from the live database
+- [ ] Full dress rehearsal: real signup by phone → staff creates account → member books → pays with a real card → cancels → refund lands — all on a phone
+- [ ] **GO LIVE** — announce the $50 first session
 
-## Phase 5 — Launch gate (JOINT)
+## Post-launch backlog (build when usage asks for it)
 
-- [ ] Swap DRAFT legal pages for counsel-reviewed text
-- [ ] Danny decisions locked: membership billing (annual/monthly), agency role (link vs revenue share), team prime-time ceiling
-- [ ] End-to-end dress rehearsal: real signup, real card, real booking, real refund, on a phone
-- [ ] Change/confirm staff credentials; final demo-data purge
-- [ ] **GO LIVE** — announce the $50 first-session offer
-
-## Post-launch backlog (earn their way in with data)
-
-- SMS reminders · waitlist for freed prime slots · revenue dashboard vs $16.7k/mo break-even · 10-packs / heavy-user tier · off-peak member discount · Stripe Connect platform play (other facilities)
+SMS reminders · waitlist for freed prime slots · revenue dashboard vs $16.7k/mo break-even · prepaid session packs / heavy-user tier · off-peak member rates · staff settings screen (hours/prices without code) · Stripe Connect platform play (selling the system to other facilities)
 
 ---
 
-**Critical path:** bank account → Stripe → payments. Everything else can overlap.
-**Fastest visible win:** Neon + Vercel signups (~10 min) → I ship the public demo URL this week.
+**Critical path in one line:** bank → Stripe → payments build → dress rehearsal → live.
+**Everything else can overlap.** Running cost at launch: ~$23/month + Stripe's ~3% of transactions.

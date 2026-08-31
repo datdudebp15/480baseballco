@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
   const db = await getDb();
   const row = await db.get(
-    `SELECT u.* FROM login_challenges c
+    `SELECT c.attempts, u.* FROM login_challenges c
      JOIN users u ON u.id = c.user_id
      WHERE c.token = ? AND c.expires_at > ?`,
     [token, isoNow()]
@@ -27,6 +27,18 @@ export async function POST(req: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const u = row as any;
   if (!u.totp_enabled || !verifyTotp(u.totp_secret, code)) {
+    // Cap wrong guesses per challenge so codes can't be brute-forced.
+    if (Number(u.attempts) + 1 >= 5) {
+      await db.run("DELETE FROM login_challenges WHERE token = ?", [token]);
+      return NextResponse.json(
+        { error: "Too many wrong codes — start the login over." },
+        { status: 429 }
+      );
+    }
+    await db.run(
+      "UPDATE login_challenges SET attempts = attempts + 1 WHERE token = ?",
+      [token]
+    );
     return NextResponse.json(
       { error: "That code didn't match. Try the current code from your app." },
       { status: 401 }
