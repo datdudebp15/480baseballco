@@ -20,6 +20,12 @@ export async function GET() {
       mode: url ? "postgres" : "sqlite",
       dbHost,
       users: Number(row?.c ?? 0),
+      stripe: {
+        secretKey: !!process.env.STRIPE_SECRET_KEY,
+        webhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+        webhookSecretLooksRight:
+          process.env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_") ?? false,
+      },
     });
   } catch (e) {
     return NextResponse.json(
