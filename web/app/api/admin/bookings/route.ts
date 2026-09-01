@@ -5,6 +5,7 @@ import { facility } from "@/lib/config";
 import { localKey } from "@/lib/schedule";
 import { isValidDateKey, rateFor, slotStart } from "@/lib/booking";
 import { phoenixNow } from "@/lib/time";
+import { getStripe, paymentsEnabled } from "@/lib/stripe";
 
 async function requireAdmin() {
   const user = await getUser();
@@ -113,6 +114,10 @@ export async function DELETE(req: Request) {
   }
   const id = Number(new URL(req.url).searchParams.get("id"));
   const db = await getDb();
+  const row = await db.get<{ stripe_payment_intent: string | null }>(
+    "SELECT stripe_payment_intent FROM bookings WHERE id = ? AND status = 'confirmed'",
+    [id]
+  );
   const changes = await db.run(
     "UPDATE bookings SET status = 'canceled' WHERE id = ? AND status = 'confirmed'",
     [id]
@@ -120,6 +125,16 @@ export async function DELETE(req: Request) {
   if (changes === 0) {
     return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   }
-  await audit(db, admin.email, "booking.cancel", `booking #${id}`);
-  return NextResponse.json({ ok: true });
+  // Staff removals refund automatically if the booking was paid online.
+  let refunded = false;
+  if (row?.stripe_payment_intent && paymentsEnabled()) {
+    try {
+      await getStripe().refunds.create({ payment_intent: row.stripe_payment_intent });
+      refunded = true;
+    } catch {
+      /* already refunded or unpayable — cancellation stands */
+    }
+  }
+  await audit(db, admin.email, "booking.cancel", `booking #${id}${refunded ? " (refunded)" : ""}`);
+  return NextResponse.json({ ok: true, refunded });
 }

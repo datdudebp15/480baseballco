@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { cleanupExpiredHolds, getDb, isoNow } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { facility, isPrimeHour } from "@/lib/config";
 import { getBookableDays } from "@/lib/schedule";
@@ -26,6 +26,7 @@ type SlotOut = {
 export async function GET() {
   const user = await getUser();
   const db = await getDb();
+  await cleanupExpiredHolds(db);
   const now = phoenixNow();
   const days = getBookableDays(now);
   const first = days[0].key;
@@ -42,6 +43,14 @@ export async function GET() {
     `SELECT date, hour, units, team_name FROM team_blocks
      WHERE date BETWEEN ? AND ?`,
     [first, last]
+  );
+
+  // Active payment holds count against capacity (shown as taken spots, no name).
+  const holds = await db.all(
+    `SELECT date, hour, COUNT(*) AS c FROM bookings
+     WHERE status = 'pending' AND expires_at > ? AND date BETWEEN ? AND ?
+     GROUP BY date, hour`,
+    [isoNow(), first, last]
   );
 
   const friendIds = new Set<number>();
@@ -91,6 +100,11 @@ export async function GET() {
       friend: isFriend,
     });
     if (isFriend) slot.friends?.push(shortName(r.name));
+  }
+
+  for (const h of holds) {
+    const slot = slots[h.date]?.[h.hour - facility.openHour];
+    if (slot) slot.count += Number(h.c);
   }
 
   for (const b of blocks) {

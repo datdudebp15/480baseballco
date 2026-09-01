@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, slotUsage } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { facility } from "@/lib/config";
 import { isValidDateKey } from "@/lib/booking";
@@ -31,8 +31,7 @@ export async function GET(req: Request) {
      FROM team_blocks WHERE date = ? AND hour = ?`,
     [date, hour]
   );
-  const used =
-    bookings.length + blocks.reduce((s, b) => s + Number(b.units), 0);
+  const { used } = await slotUsage(db, date, hour); // includes payment holds
 
   return NextResponse.json({
     date,

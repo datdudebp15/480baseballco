@@ -23,6 +23,9 @@ export default function AccountPage() {
   const [showPwForm, setShowPwForm] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNext, setPwNext] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [card, setCard] = useState<any | null>(null);
+  const [paymentsOn, setPaymentsOn] = useState(false);
 
   const load = useCallback(async () => {
     const me = await fetch("/api/me").then((r) => r.json());
@@ -31,19 +34,54 @@ export default function AccountPage() {
       return;
     }
     setUser(me.user);
-    const [b, f] = await Promise.all([
+    const [b, f, pm] = await Promise.all([
       fetch("/api/bookings").then((r) => r.json()),
       fetch("/api/friends").then((r) => r.json()),
+      fetch("/api/payment-method").then((r) => r.json()),
     ]);
     setBookings(b.bookings ?? []);
     setFriends(f.friends ?? []);
     setIncoming(f.incoming ?? []);
     setOutgoing(f.outgoing ?? []);
+    setCard(pm.card ?? null);
+    setPaymentsOn(!!pm.paymentsEnabled);
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Returning from membership checkout on Stripe.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("activated") === "1" && params.get("session_id")) {
+      fetch(`/api/stripe/verify?session_id=${params.get("session_id")}`)
+        .then((r) => r.json())
+        .then((v) => {
+          setNotice(
+            v.paid && v.type === "membership"
+              ? { kind: "success", text: "Welcome to the club — your membership is active! You now book 21 days out at member rates." }
+              : { kind: "error", text: "Membership payment didn't complete." }
+          );
+          load();
+        });
+      window.history.replaceState(null, "", "/account");
+    } else if (params.get("canceled") === "1") {
+      setNotice({ kind: "info", text: "Membership checkout canceled." });
+      window.history.replaceState(null, "", "/account");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function activateMembership() {
+    const res = await fetch("/api/membership/checkout", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      setNotice({ kind: "error", text: data.error });
+      return;
+    }
+    window.location.href = data.checkoutUrl;
+  }
 
   async function cancelBooking(id: number) {
     const res = await fetch(`/api/bookings?id=${id}`, { method: "DELETE" });
@@ -182,8 +220,16 @@ export default function AccountPage() {
         {!user.isMember && (
           <p style={{ marginTop: 8 }}>
             Want the 3-week booking window and member rates?{" "}
-            <a href="/membership">See membership</a> — activation is handled at
-            the front desk for now.
+            {paymentsOn ? (
+              <button className="link-btn" onClick={activateMembership}>
+                Activate membership — $1,000/yr →
+              </button>
+            ) : (
+              <>
+                <a href="/membership">See membership</a> — activation is
+                handled at the front desk for now.
+              </>
+            )}
           </p>
         )}
         <button className="link-btn" onClick={logout}>
@@ -290,11 +336,38 @@ export default function AccountPage() {
 
       <section className="card block">
         <h3>Payment Method</h3>
-        <p>
-          No card on file. Saved cards are coming with our payment launch —
-          they&apos;ll be stored securely by Stripe (never on our servers) so
-          booking is one tap. Until then, pay at the facility.
-        </p>
+        {card ? (
+          <div className="row">
+            <span>
+              {String(card.brand).toUpperCase()} •••• {card.last4}{" "}
+              <small>
+                exp {card.expMonth}/{card.expYear}
+              </small>{" "}
+              — used for one-tap booking
+            </span>
+            <button
+              className="link-btn"
+              onClick={async () => {
+                await fetch("/api/payment-method", { method: "DELETE" });
+                setNotice({ kind: "success", text: "Card removed." });
+                load();
+              }}
+            >
+              Remove
+            </button>
+          </div>
+        ) : paymentsOn ? (
+          <p>
+            No card saved yet — it&apos;s stored automatically (by Stripe,
+            never on our servers) the first time you pay online, and future
+            bookings become one tap.
+          </p>
+        ) : (
+          <p>
+            Online payments aren&apos;t live yet — pay at the facility for
+            now.
+          </p>
+        )}
       </section>
 
       <section className="card block">

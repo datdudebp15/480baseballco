@@ -22,12 +22,12 @@ Updated end of August 2026. Live site: **https://480baseballco-homescoutt.vercel
 - [ ] **Facility photos/video** → the "Photos coming soon" tiles on /about.
 - [ ] Nice-to-haves: a **480-area-code number** (Google Voice, forwards to your phone — on-brand + local trust); free **uptime monitor** (UptimeRobot pinging `/api/health` — I'll give you the URL).
 
-## 🟨 ME — unblocked (next work block, say go)
+## 🟨 ME — unblocked ✅ ALL DONE (end of Aug 2026)
 
-- [ ] **Security batch:** Next.js 16 upgrade (clears remaining advisories), rate-limit the 2FA endpoint, origin checks, staff audit log.
-- [ ] **Database backup export** (staff button) — insurance until the $19/mo Neon tier with point-in-time recovery.
-- [ ] **Member-since / renewal tracking** — so annual memberships don't silently lapse before Stripe subscriptions exist.
-- [ ] **Automated test suite** — do right before the Stripe build touches real money.
+- [x] **Security batch:** Next.js 16 (zero npm advisories), 2FA code attempts capped at 5 per challenge, cross-origin write protection middleware, staff audit log (dashboard shows recent activity with who-did-what).
+- [x] **Database backup export** — "Download backup ↓" link on the staff dashboard; full JSON snapshot, treat the file as sensitive.
+- [x] **Member-since / renewal tracking** — accounts table shows the date; a red "Renewal due" tag appears at ~11 months.
+- [x] **Automated test suite** — 17 tests (`npm test`) covering TOTP (passes the official RFC vector), booking windows, calendar files, schedule math. Grows with the Stripe build.
 
 ## 🟦 ME — blocked on your items above
 

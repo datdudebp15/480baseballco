@@ -282,6 +282,10 @@ const PG_SCHEMA = `
 
   ALTER TABLE login_challenges ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS member_since TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS stripe_payment_intent TEXT;
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS expires_at TEXT;
 `;
 
 /* ---------------- Init & seed ---------------- */
@@ -336,11 +340,30 @@ function migrateSqlite(db: Database.Database) {
     db.exec("ALTER TABLE users ADD COLUMN waiver_accepted_at TEXT");
   if (!cols.includes("member_since"))
     db.exec("ALTER TABLE users ADD COLUMN member_since TEXT");
+  if (!cols.includes("stripe_subscription_id"))
+    db.exec("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT");
+  const bkCols = (db.prepare("PRAGMA table_info(bookings)").all() as { name: string }[]).map(
+    (c) => c.name
+  );
+  if (!bkCols.includes("stripe_session_id"))
+    db.exec("ALTER TABLE bookings ADD COLUMN stripe_session_id TEXT");
+  if (!bkCols.includes("stripe_payment_intent"))
+    db.exec("ALTER TABLE bookings ADD COLUMN stripe_payment_intent TEXT");
+  if (!bkCols.includes("expires_at"))
+    db.exec("ALTER TABLE bookings ADD COLUMN expires_at TEXT");
   const chCols = (db.prepare("PRAGMA table_info(login_challenges)").all() as { name: string }[]).map(
     (c) => c.name
   );
   if (!chCols.includes("attempts"))
     db.exec("ALTER TABLE login_challenges ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0");
+}
+
+// Remove abandoned payment holds whose checkout window has passed.
+export async function cleanupExpiredHolds(db: Dbx): Promise<void> {
+  await db.run(
+    "DELETE FROM bookings WHERE status = 'pending' AND expires_at <= ?",
+    [isoNow()]
+  );
 }
 
 // One line per staff action, for accountability once there is more than one
@@ -430,7 +453,9 @@ async function seedDemo(db: Dbx) {
 
 /* ---------------- Shared helpers ---------------- */
 
-// Units consumed in one slot: customer bookings plus team-block holds.
+// Units consumed in one slot: confirmed bookings, unexpired payment holds,
+// and team-block holds. A "pending" booking is a slot held while its
+// customer is at the Stripe checkout.
 export async function slotUsage(
   db: Dbx,
   date: string,
@@ -440,8 +465,9 @@ export async function slotUsage(
     (
       await db.get<{ c: number }>(
         `SELECT COUNT(*) AS c FROM bookings
-         WHERE date = ? AND hour = ? AND status = 'confirmed'`,
-        [date, hour]
+         WHERE date = ? AND hour = ?
+           AND (status = 'confirmed' OR (status = 'pending' AND expires_at > ?))`,
+        [date, hour, isoNow()]
       )
     )?.c ?? 0
   );

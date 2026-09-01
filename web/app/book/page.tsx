@@ -48,6 +48,31 @@ export default function BookPage() {
     load();
   }, [load]);
 
+  // Returning from Stripe Checkout: verify the payment server-side, or
+  // release the held slot if they backed out.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("paid") === "1" && params.get("session_id")) {
+      fetch(`/api/stripe/verify?session_id=${params.get("session_id")}`)
+        .then((r) => r.json())
+        .then((v) => {
+          setNotice(
+            v.paid
+              ? { kind: "success", text: "Payment confirmed — you're booked! A receipt is in your Stripe email." }
+              : { kind: "error", text: "Payment didn't complete — your slot was not booked." }
+          );
+          load();
+        });
+      window.history.replaceState(null, "", "/book");
+    } else if (params.get("canceled") === "1") {
+      const held = params.get("booking");
+      if (held) fetch(`/api/bookings?id=${held}`, { method: "DELETE" }).then(() => load());
+      setNotice({ kind: "info", text: "Checkout canceled — the slot was released." });
+      window.history.replaceState(null, "", "/book");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Confirmations must be seen: booking from low on the page would otherwise
   // leave the banner scrolled out of view.
   useEffect(() => {
@@ -107,13 +132,20 @@ export default function BookPage() {
       body: JSON.stringify({ date: day.key, hour: slot.hour }),
     });
     const result = await res.json();
+    if (res.ok && result.checkoutUrl) {
+      // Slot is held for 30 minutes while they pay on Stripe's page.
+      window.location.href = result.checkoutUrl;
+      return;
+    }
     setBusyHour(null);
     setJustBooked(res.ok ? { date: day.key, hour: slot.hour } : null);
     setNotice(
       res.ok
         ? {
             kind: "success",
-            text: `Booked: ${formatDayLong(dateFromKey(day.key))} at ${formatHour(slot.hour)} — $${result.price}. (Pay at the facility until online payments launch.)`,
+            text: result.paid
+              ? `Booked & paid: ${formatDayLong(dateFromKey(day.key))} at ${formatHour(slot.hour)} — $${result.price} charged to your ${result.card}.`
+              : `Booked: ${formatDayLong(dateFromKey(day.key))} at ${formatHour(slot.hour)} — $${result.price}. (Pay at the facility.)`,
           }
         : { kind: "error", text: result.error }
     );
