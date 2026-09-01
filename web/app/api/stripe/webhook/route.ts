@@ -26,7 +26,12 @@ export async function POST(req: Request) {
 
   const db = await getDb();
 
-  if (event.type === "checkout.session.completed") {
+  // ACH/bank payments confirm days after the session completes — the async
+  // event carries the final word, so treat it identically to completion.
+  if (
+    event.type === "checkout.session.completed" ||
+    event.type === "checkout.session.async_payment_succeeded"
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
     if (session.payment_status === "paid") {
       if (session.metadata?.type === "booking") {
@@ -46,10 +51,13 @@ export async function POST(req: Request) {
     }
   }
 
-  if (event.type === "checkout.session.expired") {
+  if (
+    event.type === "checkout.session.expired" ||
+    event.type === "checkout.session.async_payment_failed"
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
     if (session.metadata?.type === "booking") {
-      // Customer abandoned checkout — release the held slot immediately.
+      // Abandoned checkout or failed delayed payment — release the held slot.
       await db.run("DELETE FROM bookings WHERE id = ? AND status = 'pending'", [
         Number(session.metadata.bookingId),
       ]);

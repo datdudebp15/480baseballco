@@ -31,7 +31,9 @@ Updated end of August 2026. Live site: **https://480baseballco-homescoutt.vercel
 
 ## 🟦 ME — blocked on your items above
 
-- [ ] **Stripe build** (needs your Stripe account): pay-to-book with saved cards, membership subscriptions (+ ACH option), automatic refunds, webhooks. ~1 week of sessions. **This is "fully functional."**
+- [x] **Stripe build — DONE in test mode (early Sep 2026)** and verified end-to-end on the live site: pay-to-book via Stripe Checkout with 30-min slot holds, cards auto-saved → one-tap rebooking, $50 first-session honored, $1,000/yr membership subscription (card + ACH offered) activating instantly, automatic refunds on customer and staff cancellations.
+  - [ ] Warren: add the webhook — Stripe dashboard → Developers → Webhooks → Add endpoint → URL `https://480baseballco-homescoutt.vercel.app/api/stripe/webhook` → events: `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.deleted` → copy the `whsec_…` signing secret → Vercel env var `STRIPE_WEBHOOK_SECRET` → redeploy.
+  - [ ] At launch (needs EIN + bank): complete Stripe activation, swap test keys for live keys in Vercel, re-run the dress rehearsal with a real card.
 - [ ] **Email** (needs domain + free Resend account): booking confirmations, cancellations, password reset, day-before reminders.
 - [ ] **Domain wiring** (needs domain): 480hitting.co → the site, redirects from the vercel.app URL.
 
