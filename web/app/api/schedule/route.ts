@@ -119,12 +119,13 @@ export async function GET() {
     });
   }
 
-  // First booking on a guest account gets the intro rate.
+  // First booking on a guest account gets the intro rate (canceled ones
+  // count as used — no cancel-and-rebook discount farming).
   let firstSessionEligible = false;
   if (user && !user.isMember) {
     const prior = await db.get<{ c: number }>(
       `SELECT COUNT(*) AS c FROM bookings
-       WHERE user_id = ? AND status = 'confirmed'`,
+       WHERE user_id = ? AND status IN ('confirmed', 'canceled')`,
       [user.id]
     );
     firstSessionEligible = Number(prior?.c) === 0;

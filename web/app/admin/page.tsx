@@ -19,6 +19,7 @@ type SlotDetail = {
   date: string;
   hour: number;
   bookings: { id: number; userId: number; name: string; email: string; isMember: number; price: number }[];
+  holds?: { id: number; name: string }[];
   blocks: { id: number; teamName: string; units: number; note: string | null }[];
   open: number;
   capacity: number;
@@ -274,7 +275,7 @@ export default function AdminPage() {
               Close
             </button>
           </div>
-          {slotDetail.bookings.length === 0 && slotDetail.blocks.length === 0 ? (
+          {slotDetail.bookings.length === 0 && slotDetail.blocks.length === 0 && (slotDetail.holds ?? []).length === 0 ? (
             <p style={{ marginTop: 8 }}>Nobody in this slot.</p>
           ) : (
             <ul className="rows">
@@ -290,6 +291,14 @@ export default function AdminPage() {
                   <button className="link-btn" onClick={() => removeBooking(b.id, b.name)}>
                     Remove
                   </button>
+                </li>
+              ))}
+              {(slotDetail.holds ?? []).map((h) => (
+                <li key={`h-${h.id}`} className="row">
+                  <span>
+                    {h.name} <span className="tag">Paying now…</span>
+                  </span>
+                  <small>hold releases automatically</small>
                 </li>
               ))}
               {slotDetail.blocks.map((bl) => (

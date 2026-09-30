@@ -77,12 +77,14 @@ export async function POST(req: Request) {
     );
   }
 
-  // Intro rate: a guest account's first-ever booking is $50.
+  // Intro rate: a guest account's first-ever booking is $50. Canceled
+  // bookings still count as "used" — otherwise cancel-and-rebook would
+  // farm the discount repeatedly.
   let price = rateFor(user);
   if (!user.isMember) {
     const prior = await db.get<{ c: number }>(
       `SELECT COUNT(*) AS c FROM bookings
-       WHERE user_id = ? AND status = 'confirmed'`,
+       WHERE user_id = ? AND status IN ('confirmed', 'canceled')`,
       [user.id]
     );
     if (Number(prior?.c) === 0) price = facility.firstSessionRate;
@@ -94,14 +96,22 @@ export async function POST(req: Request) {
   try {
     bookingId = await db.tx(async (t) => {
       await t.lockSlot(date, hour);
+      // If THIS user already holds this slot pending payment (e.g. they hit
+      // Back from checkout), release their own hold and start fresh instead
+      // of telling them the slot is taken for 30 minutes.
+      await t.run(
+        `DELETE FROM bookings
+         WHERE user_id = ? AND date = ? AND hour = ? AND status = 'pending'`,
+        [user.id, date, hour]
+      );
+
       const taken = (await slotUsage(t, date, hour)).used;
       if (taken >= facility.capacityPerHour) throw new Error("FULL");
 
       const dup = await t.get(
         `SELECT id FROM bookings
-         WHERE user_id = ? AND date = ? AND hour = ?
-           AND (status = 'confirmed' OR (status = 'pending' AND expires_at > ?))`,
-        [user.id, date, hour, isoNow()]
+         WHERE user_id = ? AND date = ? AND hour = ? AND status = 'confirmed'`,
+        [user.id, date, hour]
       );
       if (dup) throw new Error("DUP");
 

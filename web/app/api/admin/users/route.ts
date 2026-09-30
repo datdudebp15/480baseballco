@@ -4,6 +4,7 @@ import { audit, getDb, isoNow } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { addDays, localKey } from "@/lib/schedule";
 import { phoenixNow } from "@/lib/time";
+import { getStripe, paymentsEnabled } from "@/lib/stripe";
 
 // Staff-only: accounts with upcoming booking counts, plus topline stats.
 export async function GET() {
@@ -196,10 +197,38 @@ export async function POST(req: Request) {
   }
 
   const isMember = body?.isMember ? 1 : 0;
+
+  // Revoking membership must also stop an active Stripe subscription —
+  // otherwise the customer keeps getting billed for access they lost.
+  let subscriptionCanceled = false;
+  if (!isMember && paymentsEnabled()) {
+    const target2 = await db.get<{ stripe_subscription_id: string | null }>(
+      "SELECT stripe_subscription_id FROM users WHERE id = ?",
+      [userId]
+    );
+    if (target2?.stripe_subscription_id) {
+      try {
+        await getStripe().subscriptions.cancel(target2.stripe_subscription_id);
+        subscriptionCanceled = true;
+      } catch {
+        /* already canceled at Stripe — proceed */
+      }
+      await db.run(
+        "UPDATE users SET stripe_subscription_id = NULL WHERE id = ?",
+        [userId]
+      );
+    }
+  }
+
   await db.run(
     "UPDATE users SET is_member = ?, member_since = CASE WHEN ? = 1 THEN ? ELSE NULL END WHERE id = ?",
     [isMember, isMember, isoNow(), userId]
   );
-  await audit(db, user.email, "account.membership", `user #${userId} -> ${isMember ? "member" : "guest"}`);
-  return NextResponse.json({ ok: true });
+  await audit(
+    db,
+    user.email,
+    "account.membership",
+    `user #${userId} -> ${isMember ? "member" : "guest"}${subscriptionCanceled ? " (Stripe subscription canceled)" : ""}`
+  );
+  return NextResponse.json({ ok: true, subscriptionCanceled });
 }

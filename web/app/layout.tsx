@@ -15,6 +15,19 @@ export const metadata: Metadata = {
   title: "480 Hitting Co. · Reservations",
   description:
     "Reserve cage time at 480 Hitting Co. in Mesa, Arizona. Members book up to 3 weeks out.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "480 Hitting",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport = {
+  themeColor: "#7a1c2b",
 };
 
 export default function RootLayout({

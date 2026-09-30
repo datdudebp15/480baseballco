@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb, slotUsage } from "@/lib/db";
+import { getDb, isoNow, slotUsage } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { facility } from "@/lib/config";
 import { isValidDateKey } from "@/lib/booking";
@@ -31,12 +31,18 @@ export async function GET(req: Request) {
      FROM team_blocks WHERE date = ? AND hour = ?`,
     [date, hour]
   );
+  const holds = await db.all(
+    `SELECT b.id, u.name FROM bookings b JOIN users u ON u.id = b.user_id
+     WHERE b.date = ? AND b.hour = ? AND b.status = 'pending' AND b.expires_at > ?`,
+    [date, hour, isoNow()]
+  );
   const { used } = await slotUsage(db, date, hour); // includes payment holds
 
   return NextResponse.json({
     date,
     hour,
     bookings,
+    holds,
     blocks,
     open: Math.max(0, facility.capacityPerHour - used),
     capacity: facility.capacityPerHour,
