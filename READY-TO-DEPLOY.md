@@ -65,5 +65,35 @@ Live site: https://480baseballco-homescoutt.vercel.app · Repo: github.com/datdu
 - [ ] Announce the $50 first session
 - [ ] Watch the staff dashboard's Recent Activity + Stripe payments for the first week
 
+## 9 · Plan to Profit
+
+**The nut:** ~$16.7k/month fixed ($450k build + $150k lease over 3 yrs), before utilities/insurance.
+
+**What each unit is worth per month:**
+- **Member** ≈ $233/mo ($83 membership + ~2 sessions × $75) — the core unit
+- **Guest hour** = $100 (and the $50 first session is the bait that converts them)
+- **Team lane-hour** = $250 (3 spots × ~$83, prepaid 30+ days out)
+
+**Two simple paths to break-even — aim for both halves:**
+- ~72 active members alone, **or**
+- ~40 members + one team deal at 10 lane-hrs/week (= $10.8k/mo)
+
+**90-day ramp after go-live:**
+
+| By day | Members | Teams | Weekly paid hrs | Run-rate |
+|---|---|---|---|---|
+| 30 | 20 (founding circle: Danny's athletes, James's network, first callers) | ASU/club conversation → signed LOI | 10 | ~$7k/mo |
+| 60 | 40 | 1 team live on recurring blocks | 15 | ~$13k/mo |
+| 90 | 60–70 | 1–2 teams | 20 | **break-even+** |
+
+**The funnel that feeds it:** Google/IG/coach referral → $50 first session (phone call to Warren) → the Trajekt sells itself → membership pitch on the spot ("pays for itself at 40 hrs; you just used 1"). Track first-session → member conversion; 40%+ means the funnel works, below 25% means the pitch or price needs work.
+
+**Watch weekly (staff dashboard has the numbers):** member count · 7-day booked revenue vs $3,850/wk break-even · prime-time utilization · first-session conversions.
+
+**Levers if behind at day 60:** off-peak member rate (~$60) to fill dead mornings · 10-pack at ~$650 · push the second team · agency channel blitz with Danny.
+**Levers if ahead:** prime-time premium ($115–125 evenings/weekends) · waitlist tier · stop discounting first sessions.
+
+**Ceiling check:** full utilization ≈ $1M/yr — profit is a sales problem, never a capacity problem.
+
 ---
-**Sequence:** §1 today · §2–3 as paperwork lands · §4–6 any time · §7 last · §8 🎉
+**Sequence:** §1 today · §2–3 as paperwork lands · §4–6 any time · §7 last · §8 🎉 · §9 forever
