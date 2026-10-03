@@ -16,9 +16,11 @@ type Slot = {
   past: boolean;
   count: number;
   mine: number | null;
+  tagged?: boolean;
   roster?: RosterEntry[];
   friends?: string[];
 };
+type Account = { id: number; name: string; isMember: boolean; friend: boolean };
 type Day = { key: string; daysOut: number; membersOnly: boolean };
 type Schedule = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,6 +37,9 @@ export default function BookPage() {
   const [data, setData] = useState<Schedule | null>(null);
   const [selected, setSelected] = useState(0);
   const [picked, setPicked] = useState<number[]>([]); // hours selected Photos-style
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [guests, setGuests] = useState<Account[]>([]); // hitting partners (max 2)
+  const [guestSearch, setGuestSearch] = useState("");
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
   const [justBooked, setJustBooked] = useState<{ date: string; hours: number[] } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,7 +48,13 @@ export default function BookPage() {
 
   const load = useCallback(async () => {
     const res = await fetch("/api/schedule");
-    setData(await res.json());
+    const d = await res.json();
+    setData(d);
+    if (d.user) {
+      fetch("/api/accounts")
+        .then((r) => r.json())
+        .then((a) => setAccounts(a.accounts ?? []));
+    }
   }, []);
 
   useEffect(() => {
@@ -143,6 +154,18 @@ export default function BookPage() {
     });
   }
 
+  function toggleGuest(a: Account) {
+    setGuests((prev) => {
+      if (prev.some((g) => g.id === a.id)) return prev.filter((g) => g.id !== a.id);
+      if (prev.length >= 2) {
+        setNotice({ kind: "info", text: "A session fits 3 hitters — you plus two partners." });
+        return prev;
+      }
+      return [...prev, a];
+    });
+    setGuestSearch("");
+  }
+
   async function bookPicked() {
     if (picked.length === 0) return;
     const hours = [...picked].sort((a, b) => a - b);
@@ -150,7 +173,7 @@ export default function BookPage() {
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: day.key, hours }),
+      body: JSON.stringify({ date: day.key, hours, guests: guests.map((g) => g.id) }),
     });
     const result = await res.json();
     if (res.ok && result.checkoutUrl) {
@@ -159,7 +182,10 @@ export default function BookPage() {
       return;
     }
     setBusy(false);
-    if (res.ok) setPicked([]);
+    if (res.ok) {
+      setPicked([]);
+      setGuests([]);
+    }
     setJustBooked(res.ok ? { date: day.key, hours } : null);
     const span = hours.map(formatHour).join(", ");
     setNotice(
@@ -360,6 +386,8 @@ export default function BookPage() {
                   </>
                 ) : slot.past ? (
                   <div className="state">Past</div>
+                ) : slot.tagged ? (
+                  <div className="state reserved">You&apos;re hitting here ✓</div>
                 ) : full ? (
                   <div className="state">Full</div>
                 ) : lockedOut ? (
@@ -378,7 +406,40 @@ export default function BookPage() {
       )}
 
       {picked.length > 0 && (
-        <div className="action-bar">
+        <div className="action-bar action-bar-col">
+          <div className="ab-guests">
+            <span className="ab-label">Hitting with:</span>
+            {guests.map((g) => (
+              <button key={g.id} className="pick on" onClick={() => toggleGuest(g)}>
+                {g.name} ✕
+              </button>
+            ))}
+            {guests.length < 2 && (
+              <input
+                className="ab-search"
+                placeholder={accounts.length ? "Search the roster…" : "Loading roster…"}
+                value={guestSearch}
+                onChange={(e) => setGuestSearch(e.target.value)}
+              />
+            )}
+            {guests.length < 2 &&
+              accounts
+                .filter(
+                  (a) =>
+                    !guests.some((g) => g.id === a.id) &&
+                    (guestSearch
+                      ? a.name.toLowerCase().includes(guestSearch.toLowerCase())
+                      : a.friend)
+                )
+                .slice(0, 5)
+                .map((a) => (
+                  <button key={a.id} className="pick" onClick={() => toggleGuest(a)}>
+                    {a.name}
+                    {a.friend ? " ★" : ""}
+                  </button>
+                ))}
+          </div>
+          <div className="ab-row">
           <span className="ab-summary">
             {picked.length} session{picked.length > 1 ? "s" : ""}
             {" · "}
@@ -394,13 +455,20 @@ export default function BookPage() {
             )}
           </span>
           <span>
-            <button className="link-btn" onClick={() => setPicked([])}>
+            <button
+              className="link-btn"
+              onClick={() => {
+                setPicked([]);
+                setGuests([]);
+              }}
+            >
               Clear
             </button>{" "}
             <button className="btn small" disabled={busy} onClick={bookPicked}>
               {busy ? "Booking…" : "Book"}
             </button>
           </span>
+          </div>
         </div>
       )}
     </>

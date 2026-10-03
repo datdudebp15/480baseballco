@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { dateFromKey, formatDayLong, formatHour } from "@/lib/schedule";
 import { downloadIcs } from "@/lib/ics";
 
-type Booking = { id: number; date: string; hour: number; price: number };
+type Booking = { id: number; date: string; hour: number; price: number; guests?: string[] };
 type Person = { id: number; name: string; email: string };
 type Pending = { id: number; name: string; email: string };
 
@@ -383,6 +383,9 @@ export default function AccountPage() {
                 <span>
                   {formatDayLong(dateFromKey(b.date))} · {formatHour(b.hour)} ·
                   ${b.price}
+                  {b.guests && b.guests.length > 0 && (
+                    <small> · with {b.guests.join(" & ")}</small>
+                  )}
                 </span>
                 <span>
                   <button

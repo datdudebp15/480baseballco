@@ -19,6 +19,7 @@ type SlotOut = {
   past: boolean;
   count: number; // units used: customer bookings + team-block holds
   mine: number | null;
+  tagged?: boolean; // the viewer is listed as a hitting partner here
   roster?: RosterEntry[];
   friends?: string[];
 };
@@ -105,6 +106,28 @@ export async function GET() {
   for (const h of holds) {
     const slot = slots[h.date]?.[h.hour - facility.openHour];
     if (slot) slot.count += Number(h.c);
+  }
+
+  // Tagged hitting partners ride along on the booker's reservation.
+  const guestRows = await db.all(
+    `SELECT bg.user_id, u.name, u.is_member, b.date, b.hour
+     FROM booking_guests bg
+     JOIN bookings b ON b.id = bg.booking_id
+     JOIN users u ON u.id = bg.user_id
+     WHERE b.status = 'confirmed' AND b.date BETWEEN ? AND ?`,
+    [first, last]
+  );
+  for (const g of guestRows) {
+    const slot = slots[g.date]?.[g.hour - facility.openHour];
+    if (!slot) continue;
+    const isFriend = friendIds.has(g.user_id);
+    slot.roster?.push({
+      name: shortName(g.name),
+      member: !!g.is_member,
+      friend: isFriend,
+    });
+    if (isFriend) slot.friends?.push(shortName(g.name));
+    if (user && g.user_id === user.id) slot.tagged = true;
   }
 
   for (const b of blocks) {

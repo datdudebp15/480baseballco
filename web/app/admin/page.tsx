@@ -18,7 +18,7 @@ type Stats = {
 type SlotDetail = {
   date: string;
   hour: number;
-  bookings: { id: number; userId: number; name: string; email: string; isMember: number; price: number }[];
+  bookings: { id: number; userId: number; name: string; email: string; isMember: number; price: number; partners?: string[] }[];
   holds?: { id: number; name: string }[];
   blocks: { id: number; teamName: string; units: number; note: string | null }[];
   open: number;
@@ -285,6 +285,9 @@ export default function AdminPage() {
                       {b.isMember ? "Member" : "Guest"}
                     </span>{" "}
                     <small>${b.price}</small>
+                    {b.partners && b.partners.length > 0 && (
+                      <small> · with {b.partners.join(" & ")}</small>
+                    )}
                   </span>
                   <button className="link-btn" onClick={() => removeBooking(b.id, b.name)}>
                     Remove

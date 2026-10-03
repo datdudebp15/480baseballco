@@ -843,6 +843,43 @@ a {
   color: var(--ink);
 }
 
+.action-bar-col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.ab-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ab-guests {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ab-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-family: var(--font-head), sans-serif;
+}
+
+.ab-search {
+  flex: 0 1 150px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--cream-soft);
+}
+
 .occ-click {
   cursor: pointer;
 }

@@ -31,6 +31,22 @@ export async function GET(req: Request) {
      FROM team_blocks WHERE date = ? AND hour = ?`,
     [date, hour]
   );
+  // Tagged hitting partners per booking (registered accounts).
+  if (bookings.length > 0) {
+    const ids = bookings.map((b) => b.id);
+    const partnerRows = await db.all(
+      `SELECT bg.booking_id AS "bookingId", u.name
+       FROM booking_guests bg JOIN users u ON u.id = bg.user_id
+       WHERE bg.booking_id IN (${ids.map(() => "?").join(",")})`,
+      ids
+    );
+    for (const b of bookings) {
+      b.partners = partnerRows
+        .filter((p) => p.bookingId === b.id)
+        .map((p) => p.name);
+    }
+  }
+
   const holds = await db.all(
     `SELECT b.id, u.name FROM bookings b JOIN users u ON u.id = b.user_id
      WHERE b.date = ? AND b.hour = ? AND b.status = 'pending' AND b.expires_at > ?`,

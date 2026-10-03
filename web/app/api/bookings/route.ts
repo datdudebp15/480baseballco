@@ -32,6 +32,18 @@ export async function GET() {
      ORDER BY date, hour`,
     [user.id, today, today, now.getHours()]
   );
+  if (rows.length > 0) {
+    const ids = rows.map((r) => r.id);
+    const guests = await db.all(
+      `SELECT bg.booking_id AS "bookingId", u.name
+       FROM booking_guests bg JOIN users u ON u.id = bg.user_id
+       WHERE bg.booking_id IN (${ids.map(() => "?").join(",")})`,
+      ids
+    );
+    for (const r of rows) {
+      r.guests = guests.filter((g) => g.bookingId === r.id).map((g) => g.name);
+    }
+  }
   return NextResponse.json({ bookings: rows });
 }
 
@@ -72,6 +84,13 @@ export async function POST(req: Request) {
   }
   const duration = hoursList.length;
   const now = phoenixNow();
+
+  // Who they're hitting with: registered accounts only (waivers on file).
+  const guestIds: number[] = Array.isArray(body?.guests)
+    ? [...new Set<number>(body.guests.map((g: unknown) => Number(g)))]
+        .filter((g) => Number.isInteger(g) && g > 0 && g !== user.id)
+        .slice(0, facility.hittersPerSession - 1)
+    : [];
 
   // Every hour in the block must clear the same rules (window, operating
   // hours, not past) — this also rejects blocks that run past closing.
@@ -118,6 +137,19 @@ export async function POST(req: Request) {
   const perHourPrices = hoursList.map((_, i) => (i === 0 ? firstHourRate : baseRate));
   const totalPrice = perHourPrices.reduce((a, b) => a + b, 0);
 
+  if (guestIds.length > 0) {
+    const found = await db.all(
+      `SELECT id FROM users WHERE id IN (${guestIds.map(() => "?").join(",")})`,
+      guestIds
+    );
+    if (found.length !== guestIds.length) {
+      return NextResponse.json(
+        { error: "One of those hitting partners isn't a registered account." },
+        { status: 400 }
+      );
+    }
+  }
+
   // Reserve the whole block atomically (pending if paying online,
   // confirmed if desk-pay mode) — all hours or none.
   const payOnline = paymentsEnabled();
@@ -159,6 +191,12 @@ export async function POST(req: Request) {
           ]
         );
         ids.push(created!.id);
+        for (const g of guestIds) {
+          await t.run(
+            "INSERT INTO booking_guests (booking_id, user_id) VALUES (?, ?)",
+            [created!.id, g]
+          );
+        }
       }
       return ids;
     });
