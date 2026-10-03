@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getUser } from "@/lib/auth";
-import { activateMembership, confirmBookingPaid, getStripe, paymentsEnabled } from "@/lib/stripe";
+import {
+  activateMembership,
+  bookingIdsFromMetadata,
+  confirmBookingPaid,
+  getStripe,
+  paymentsEnabled,
+} from "@/lib/stripe";
 
 // Called when the customer lands back from Stripe Checkout. Verifies the
 // session server-side (never trusts the redirect itself) and finalizes the
@@ -30,10 +36,9 @@ export async function GET(req: Request) {
 
   const db = await getDb();
   if (session.metadata?.type === "booking") {
-    const bookingId = Number(session.metadata.bookingId);
     await confirmBookingPaid(
       db,
-      bookingId,
+      bookingIdsFromMetadata(session.metadata),
       typeof session.payment_intent === "string" ? session.payment_intent : null
     );
     return NextResponse.json({ paid: true, type: "booking" });

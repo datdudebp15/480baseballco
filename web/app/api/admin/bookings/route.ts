@@ -114,8 +114,8 @@ export async function DELETE(req: Request) {
   }
   const id = Number(new URL(req.url).searchParams.get("id"));
   const db = await getDb();
-  const row = await db.get<{ stripe_payment_intent: string | null }>(
-    "SELECT stripe_payment_intent FROM bookings WHERE id = ? AND status = 'confirmed'",
+  const row = await db.get<{ stripe_payment_intent: string | null; price: number }>(
+    "SELECT stripe_payment_intent, price FROM bookings WHERE id = ? AND status = 'confirmed'",
     [id]
   );
   const changes = await db.run(
@@ -129,7 +129,10 @@ export async function DELETE(req: Request) {
   let refunded = false;
   if (row?.stripe_payment_intent && paymentsEnabled()) {
     try {
-      await getStripe().refunds.create({ payment_intent: row.stripe_payment_intent });
+      await getStripe().refunds.create({
+        payment_intent: row.stripe_payment_intent,
+        amount: row.price * 100, // this hour's share of a possibly multi-hour payment
+      });
       refunded = true;
     } catch {
       /* already refunded or unpayable — cancellation stands */

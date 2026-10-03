@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { audit, getDb } from "@/lib/db";
-import { activateMembership, confirmBookingPaid, getStripe, paymentsEnabled } from "@/lib/stripe";
+import {
+  activateMembership,
+  bookingIdsFromMetadata,
+  confirmBookingPaid,
+  getStripe,
+  paymentsEnabled,
+} from "@/lib/stripe";
 
 // Stripe's server-to-server notifications — the authoritative record of
 // money moving. Signature-verified; without the signing secret configured
@@ -37,7 +43,7 @@ export async function POST(req: Request) {
       if (session.metadata?.type === "booking") {
         await confirmBookingPaid(
           db,
-          Number(session.metadata.bookingId),
+          bookingIdsFromMetadata(session.metadata),
           typeof session.payment_intent === "string" ? session.payment_intent : null
         );
       } else if (session.metadata?.type === "membership") {
@@ -57,10 +63,10 @@ export async function POST(req: Request) {
   ) {
     const session = event.data.object as Stripe.Checkout.Session;
     if (session.metadata?.type === "booking") {
-      // Abandoned checkout or failed delayed payment — release the held slot.
-      await db.run("DELETE FROM bookings WHERE id = ? AND status = 'pending'", [
-        Number(session.metadata.bookingId),
-      ]);
+      // Abandoned checkout or failed delayed payment — release the held slots.
+      for (const bid of bookingIdsFromMetadata(session.metadata)) {
+        await db.run("DELETE FROM bookings WHERE id = ? AND status = 'pending'", [bid]);
+      }
     }
   }
 

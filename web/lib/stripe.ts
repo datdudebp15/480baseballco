@@ -82,19 +82,36 @@ export async function getMembershipPriceId(): Promise<string> {
   return cachedPriceId;
 }
 
-// Mark a pending booking paid/confirmed. Idempotent — safe to call from both
-// the redirect-verify path and the webhook.
+// Mark pending bookings paid/confirmed (a multi-hour block is several
+// bookings sharing one payment). Idempotent — safe to call from both the
+// redirect-verify path and the webhook.
 export async function confirmBookingPaid(
   db: Dbx,
-  bookingId: number,
+  bookingIds: number | number[],
   paymentIntentId: string | null
 ): Promise<boolean> {
+  const ids = (Array.isArray(bookingIds) ? bookingIds : [bookingIds]).filter(
+    (n) => Number.isInteger(n) && n > 0
+  );
+  if (ids.length === 0) return false;
+  const placeholders = ids.map(() => "?").join(",");
   const changes = await db.run(
     `UPDATE bookings SET status = 'confirmed', stripe_payment_intent = ?
-     WHERE id = ? AND status = 'pending'`,
-    [paymentIntentId, bookingId]
+     WHERE id IN (${placeholders}) AND status = 'pending'`,
+    [paymentIntentId, ...ids]
   );
   return changes > 0;
+}
+
+// Parse booking ids out of Stripe metadata (new multi-hour "bookingIds"
+// CSV, with fallback to the original single "bookingId").
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function bookingIdsFromMetadata(metadata: any): number[] {
+  const raw = metadata?.bookingIds ?? metadata?.bookingId ?? "";
+  return String(raw)
+    .split(",")
+    .map((s: string) => Number(s.trim()))
+    .filter((n: number) => Number.isInteger(n) && n > 0);
 }
 
 // Activate membership from a completed subscription checkout. Idempotent.

@@ -34,8 +34,9 @@ type Schedule = {
 export default function BookPage() {
   const [data, setData] = useState<Schedule | null>(null);
   const [selected, setSelected] = useState(0);
+  const [duration, setDuration] = useState(1);
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
-  const [justBooked, setJustBooked] = useState<{ date: string; hour: number } | null>(null);
+  const [justBooked, setJustBooked] = useState<{ date: string; hour: number; hours: number } | null>(null);
   const [busyHour, setBusyHour] = useState<number | null>(null);
   const noticeRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,9 +66,11 @@ export default function BookPage() {
         });
       window.history.replaceState(null, "", "/book");
     } else if (params.get("canceled") === "1") {
-      const held = params.get("booking");
-      if (held) fetch(`/api/bookings?id=${held}`, { method: "DELETE" }).then(() => load());
-      setNotice({ kind: "info", text: "Checkout canceled — the slot was released." });
+      const held = (params.get("booking") ?? "").split(",").filter(Boolean);
+      Promise.all(
+        held.map((id) => fetch(`/api/bookings?id=${id}`, { method: "DELETE" }))
+      ).then(() => load());
+      setNotice({ kind: "info", text: "Checkout canceled — the time was released." });
       window.history.replaceState(null, "", "/book");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,23 +132,25 @@ export default function BookPage() {
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: day.key, hour: slot.hour }),
+      body: JSON.stringify({ date: day.key, hour: slot.hour, duration }),
     });
     const result = await res.json();
     if (res.ok && result.checkoutUrl) {
-      // Slot is held for 30 minutes while they pay on Stripe's page.
+      // Slots are held for 30 minutes while they pay on Stripe's page.
       window.location.href = result.checkoutUrl;
       return;
     }
     setBusyHour(null);
-    setJustBooked(res.ok ? { date: day.key, hour: slot.hour } : null);
+    setJustBooked(res.ok ? { date: day.key, hour: slot.hour, hours: duration } : null);
+    const span =
+      duration > 1 ? `${formatHour(slot.hour)} for ${duration} hours` : formatHour(slot.hour);
     setNotice(
       res.ok
         ? {
             kind: "success",
             text: result.paid
-              ? `Booked & paid: ${formatDayLong(dateFromKey(day.key))} at ${formatHour(slot.hour)} — $${result.price} charged to your ${result.card}.`
-              : `Booked: ${formatDayLong(dateFromKey(day.key))} at ${formatHour(slot.hour)} — $${result.price}. (Pay at the facility.)`,
+              ? `Booked & paid: ${formatDayLong(dateFromKey(day.key))} at ${span} — $${result.price} charged to your ${result.card}.`
+              : `Booked: ${formatDayLong(dateFromKey(day.key))} at ${span} — $${result.price}. (Pay at the facility.)`,
           }
         : { kind: "error", text: result.error }
     );
@@ -209,8 +214,27 @@ export default function BookPage() {
         Members reserve up to {windows.member} days ahead — public booking
         opens {windows.public} days before each date. Each session is a
         private hour: one booking covers the lane, bring up to two training
-        partners.
+        partners. Sessions run 50 minutes; the last 10 reset the lane — book
+        back-to-back hours to keep it rolling.
       </p>
+
+      {user && (
+        <div className="pick-row" style={{ marginBottom: 14 }}>
+          <span style={{ fontSize: 13, color: "var(--muted)", alignSelf: "center" }}>
+            Session length:
+          </span>
+          {[1, 2, 3].map((d) => (
+            <button
+              key={d}
+              type="button"
+              className={`pick${duration === d ? " on" : ""}`}
+              onClick={() => setDuration(d)}
+            >
+              {d} hour{d > 1 ? "s" : ""}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!user && (
         <div className="notice info">
@@ -243,7 +267,7 @@ export default function BookPage() {
               {" "}
               <button
                 className="link-btn"
-                onClick={() => downloadIcs(justBooked.date, justBooked.hour)}
+                onClick={() => downloadIcs(justBooked.date, justBooked.hour, justBooked.hours)}
               >
                 📅 Add to Calendar
               </button>
@@ -268,10 +292,27 @@ export default function BookPage() {
         </p>
       ) : (
         <div className="slot-grid">
-          {slots.map((slot) => {
+          {slots.map((slot, idx) => {
             const full = slot.count >= capacity;
             const unavailable =
               slot.past || (full && !slot.mine) || (lockedOut && !slot.mine);
+            // A multi-hour block needs every consecutive hour open.
+            let blockOk = !full && !slot.past && !lockedOut;
+            for (let k = 1; k < duration && blockOk; k++) {
+              const nxt = slots[idx + k];
+              blockOk =
+                !!nxt &&
+                nxt.hour === slot.hour + k &&
+                !nxt.past &&
+                nxt.count < capacity;
+            }
+            const base = rates ? (isMember ? rates.member : rates.public) : null;
+            const blockPrice =
+              rate !== null && base !== null
+                ? data.firstSessionEligible
+                  ? rates!.firstSession + base * (duration - 1)
+                  : base * duration
+                : null;
             return (
               <div
                 key={slot.hour}
@@ -326,12 +367,20 @@ export default function BookPage() {
                   <div className="state">Full</div>
                 ) : lockedOut ? (
                   <div className="state">Members Only</div>
+                ) : duration > 1 && !blockOk ? (
+                  <div className="state">No {duration}-hr Block</div>
                 ) : (
                   <button
                     disabled={busyHour === slot.hour}
                     onClick={() => book(slot)}
                   >
-                    {busyHour === slot.hour ? "Booking…" : user ? "Book" : "Log In to Book"}
+                    {busyHour === slot.hour
+                      ? "Booking…"
+                      : !user
+                        ? "Log In to Book"
+                        : duration > 1
+                          ? `Book ${duration} hrs${blockPrice !== null ? ` · $${blockPrice}` : ""}`
+                          : "Book"}
                   </button>
                 )}
               </div>

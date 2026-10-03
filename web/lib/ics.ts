@@ -13,10 +13,14 @@ function utcStamp(d: Date): string {
   );
 }
 
-export function icsForBooking(dateKey: string, hour: number): string {
+export function icsForBooking(dateKey: string, hour: number, hours = 1): string {
   const [y, m, d] = dateKey.split("-").map(Number);
   const start = new Date(Date.UTC(y, m - 1, d, hour + 7)); // Phoenix -> UTC
-  const end = new Date(start.getTime() + 3600 * 1000);
+  // Sessions are 50 minutes with a 10-minute lane reset; a multi-hour block
+  // runs continuously and ends 50 minutes into its final hour.
+  const end = new Date(
+    start.getTime() + ((hours - 1) * 60 + facility.sessionMinutes) * 60 * 1000
+  );
 
   return [
     "BEGIN:VCALENDAR",
@@ -41,8 +45,8 @@ export function icsForBooking(dateKey: string, hour: number): string {
   ].join("\r\n");
 }
 
-export function downloadIcs(dateKey: string, hour: number): void {
-  const blob = new Blob([icsForBooking(dateKey, hour)], {
+export function downloadIcs(dateKey: string, hour: number, hours = 1): void {
+  const blob = new Blob([icsForBooking(dateKey, hour, hours)], {
     type: "text/calendar;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);

@@ -2,15 +2,21 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { icsForBooking } from "../lib/ics";
 
-test("converts Phoenix time to UTC (fixed -7)", () => {
+test("converts Phoenix time to UTC (fixed -7), 50-minute session", () => {
   const ics = icsForBooking("2026-09-10", 9); // 9am MST = 16:00Z
   assert.match(ics, /DTSTART:20260910T160000Z/);
-  assert.match(ics, /DTEND:20260910T170000Z/);
+  assert.match(ics, /DTEND:20260910T165000Z/); // 50 min of hitting
 });
 
 test("late slots roll over to the next UTC day", () => {
   const ics = icsForBooking("2026-09-10", 21); // 9pm MST = 04:00Z next day
   assert.match(ics, /DTSTART:20260911T040000Z/);
+});
+
+test("multi-hour blocks run continuously to 50 past the final hour", () => {
+  const ics = icsForBooking("2026-09-10", 9, 2); // 9-10:50am MST
+  assert.match(ics, /DTSTART:20260910T160000Z/);
+  assert.match(ics, /DTEND:20260910T175000Z/);
 });
 
 test("has the essentials calendar apps require", () => {

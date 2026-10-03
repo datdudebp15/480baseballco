@@ -50,11 +50,20 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const date: string = body?.date ?? "";
   const hour: number = body?.hour;
+  const duration = Math.min(
+    Math.max(Number(body?.duration) || 1, 1),
+    facility.maxConsecutiveHours
+  );
+  const hoursList = Array.from({ length: duration }, (_, i) => hour + i);
   const now = phoenixNow();
 
-  const windowError = bookingWindowError(user, date, hour, now);
-  if (windowError) {
-    return NextResponse.json({ error: windowError }, { status: 400 });
+  // Every hour in the block must clear the same rules (window, operating
+  // hours, not past) — this also rejects blocks that run past closing.
+  for (const h of hoursList) {
+    const windowError = bookingWindowError(user, date, h, now);
+    if (windowError) {
+      return NextResponse.json({ error: windowError }, { status: 400 });
+    }
   }
 
   const db = await getDb();
@@ -68,112 +77,131 @@ export async function POST(req: Request) {
        AND (date > ? OR (date = ? AND hour >= ?))`,
     [user.id, today, today, now.getHours()]
   );
-  if (Number(upcoming?.c) >= facility.maxFutureBookings) {
+  if (Number(upcoming?.c) + duration > facility.maxFutureBookings) {
     return NextResponse.json(
       {
-        error: `You can hold up to ${facility.maxFutureBookings} upcoming reservations at a time — cancel one or come hit first, then book more.`,
+        error: `You can hold up to ${facility.maxFutureBookings} upcoming reservation hours at a time — cancel one or come hit first, then book more.`,
       },
       { status: 400 }
     );
   }
 
-  // Intro rate: a guest account's first-ever booking is $50. Canceled
-  // bookings still count as "used" — otherwise cancel-and-rebook would
-  // farm the discount repeatedly.
-  let price = rateFor(user);
+  // Intro rate: a guest account's first-ever booking is $50 (first hour
+  // only on a multi-hour block). Canceled bookings still count as "used" —
+  // otherwise cancel-and-rebook would farm the discount repeatedly.
+  const baseRate = rateFor(user);
+  let firstHourRate = baseRate;
   if (!user.isMember) {
     const prior = await db.get<{ c: number }>(
       `SELECT COUNT(*) AS c FROM bookings
        WHERE user_id = ? AND status IN ('confirmed', 'canceled')`,
       [user.id]
     );
-    if (Number(prior?.c) === 0) price = facility.firstSessionRate;
+    if (Number(prior?.c) === 0) firstHourRate = facility.firstSessionRate;
   }
+  const perHourPrices = hoursList.map((_, i) => (i === 0 ? firstHourRate : baseRate));
+  const totalPrice = perHourPrices.reduce((a, b) => a + b, 0);
 
-  // Reserve the unit (pending if paying online, confirmed if desk-pay mode).
+  // Reserve the whole block atomically (pending if paying online,
+  // confirmed if desk-pay mode) — all hours or none.
   const payOnline = paymentsEnabled();
-  let bookingId: number;
+  let bookingIds: number[];
   try {
-    bookingId = await db.tx(async (t) => {
-      await t.lockSlot(date, hour);
-      // If THIS user already holds this slot pending payment (e.g. they hit
-      // Back from checkout), release their own hold and start fresh instead
-      // of telling them the slot is taken for 30 minutes.
-      await t.run(
-        `DELETE FROM bookings
-         WHERE user_id = ? AND date = ? AND hour = ? AND status = 'pending'`,
-        [user.id, date, hour]
-      );
+    bookingIds = await db.tx(async (t) => {
+      const ids: number[] = [];
+      for (let i = 0; i < hoursList.length; i++) {
+        const h = hoursList[i];
+        await t.lockSlot(date, h);
+        // If THIS user already holds this slot pending payment (e.g. they
+        // hit Back from checkout), release their own hold and start fresh.
+        await t.run(
+          `DELETE FROM bookings
+           WHERE user_id = ? AND date = ? AND hour = ? AND status = 'pending'`,
+          [user.id, date, h]
+        );
 
-      const taken = (await slotUsage(t, date, hour)).used;
-      if (taken >= facility.capacityPerHour) throw new Error("FULL");
+        const taken = (await slotUsage(t, date, h)).used;
+        if (taken >= facility.capacityPerHour) throw new Error("FULL");
 
-      const dup = await t.get(
-        `SELECT id FROM bookings
-         WHERE user_id = ? AND date = ? AND hour = ? AND status = 'confirmed'`,
-        [user.id, date, hour]
-      );
-      if (dup) throw new Error("DUP");
+        const dup = await t.get(
+          `SELECT id FROM bookings
+           WHERE user_id = ? AND date = ? AND hour = ? AND status = 'confirmed'`,
+          [user.id, date, h]
+        );
+        if (dup) throw new Error("DUP");
 
-      const created = await t.get<{ id: number }>(
-        `INSERT INTO bookings (user_id, date, hour, price, status, expires_at)
-         VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
-        [
-          user.id,
-          date,
-          hour,
-          price,
-          payOnline ? "pending" : "confirmed",
-          payOnline ? isoNow(HOLD_MINUTES * 60 * 1000) : null,
-        ]
-      );
-      return created!.id;
+        const created = await t.get<{ id: number }>(
+          `INSERT INTO bookings (user_id, date, hour, price, status, expires_at)
+           VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+          [
+            user.id,
+            date,
+            h,
+            perHourPrices[i],
+            payOnline ? "pending" : "confirmed",
+            payOnline ? isoNow(HOLD_MINUTES * 60 * 1000) : null,
+          ]
+        );
+        ids.push(created!.id);
+      }
+      return ids;
     });
   } catch (e) {
     const msg = (e as Error).message;
     if (msg === "FULL") {
       return NextResponse.json(
-        { error: "That hour just filled up — pick another slot." },
+        {
+          error:
+            duration > 1
+              ? "Part of that block just filled up — pick different hours."
+              : "That hour just filled up — pick another slot.",
+        },
         { status: 409 }
       );
     }
     if (msg === "DUP") {
       return NextResponse.json(
-        { error: "You already have a spot in that hour." },
+        { error: "You already have one of those hours booked." },
         { status: 409 }
       );
     }
     throw e;
   }
 
+  const idsCsv = bookingIds.join(",");
+
   if (!payOnline) {
-    return NextResponse.json({ id: bookingId, price });
+    return NextResponse.json({ id: bookingIds[0], ids: bookingIds, price: totalPrice });
   }
 
   // --- Online payment path ---
   const stripe = getStripe();
   const customerId = await getOrCreateCustomer(db, user);
-  const label = `Hitting Session — ${formatDayLong(dateFromKey(date))} ${formatHour(hour)}`;
+  const label =
+    duration > 1
+      ? `Hitting Sessions — ${formatDayLong(dateFromKey(date))} ${formatHour(hour)} (${duration} hours)`
+      : `Hitting Session — ${formatDayLong(dateFromKey(date))} ${formatHour(hour)}`;
 
   // One tap: charge the saved card off-session if there is one.
   const savedCard = await getSavedCard(customerId);
   if (savedCard) {
     try {
       const intent = await stripe.paymentIntents.create({
-        amount: price * 100,
+        amount: totalPrice * 100,
         currency: "usd",
         customer: customerId,
         payment_method: savedCard.id,
         off_session: true,
         confirm: true,
         description: label,
-        metadata: { type: "booking", bookingId: String(bookingId), userId: String(user.id) },
+        metadata: { type: "booking", bookingIds: idsCsv, userId: String(user.id) },
       });
       if (intent.status === "succeeded") {
-        await confirmBookingPaid(db, bookingId, intent.id);
+        await confirmBookingPaid(db, bookingIds, intent.id);
         return NextResponse.json({
-          id: bookingId,
-          price,
+          id: bookingIds[0],
+          ids: bookingIds,
+          price: totalPrice,
           paid: true,
           card: `${savedCard.card?.brand ?? "card"} •••• ${savedCard.card?.last4 ?? ""}`,
         });
@@ -193,25 +221,32 @@ export async function POST(req: Request) {
         price_data: {
           currency: "usd",
           product_data: { name: label },
-          unit_amount: price * 100,
+          unit_amount: totalPrice * 100,
         },
         quantity: 1,
       },
     ],
     payment_intent_data: {
       setup_future_usage: "off_session",
-      metadata: { type: "booking", bookingId: String(bookingId), userId: String(user.id) },
+      metadata: { type: "booking", bookingIds: idsCsv, userId: String(user.id) },
     },
-    metadata: { type: "booking", bookingId: String(bookingId), userId: String(user.id) },
+    metadata: { type: "booking", bookingIds: idsCsv, userId: String(user.id) },
     success_url: `${origin}/book?paid=1&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/book?canceled=1&booking=${bookingId}`,
+    cancel_url: `${origin}/book?canceled=1&booking=${idsCsv}`,
     expires_at: Math.floor(Date.now() / 1000) + HOLD_MINUTES * 60,
   });
-  await (await getDb()).run(
-    "UPDATE bookings SET stripe_session_id = ? WHERE id = ?",
-    [session.id, bookingId]
-  );
-  return NextResponse.json({ id: bookingId, price, checkoutUrl: session.url });
+  for (const bid of bookingIds) {
+    await db.run("UPDATE bookings SET stripe_session_id = ? WHERE id = ?", [
+      session.id,
+      bid,
+    ]);
+  }
+  return NextResponse.json({
+    id: bookingIds[0],
+    ids: bookingIds,
+    price: totalPrice,
+    checkoutUrl: session.url,
+  });
 }
 
 // Cancel my booking. Pending holds release instantly; confirmed bookings
@@ -227,10 +262,11 @@ export async function DELETE(req: Request) {
     id: number;
     date: string;
     hour: number;
+    price: number;
     status: string;
     stripe_payment_intent: string | null;
   }>(
-    `SELECT id, date, hour, status, stripe_payment_intent FROM bookings
+    `SELECT id, date, hour, price, status, stripe_payment_intent FROM bookings
      WHERE id = ? AND user_id = ? AND status IN ('confirmed', 'pending')`,
     [id, user.id]
   );
@@ -257,8 +293,11 @@ export async function DELETE(req: Request) {
   let refunded = false;
   if (row.stripe_payment_intent && paymentsEnabled()) {
     try {
+      // Refund THIS hour's share — a multi-hour block shares one payment,
+      // so each canceled hour refunds its own price.
       await getStripe().refunds.create({
         payment_intent: row.stripe_payment_intent,
+        amount: row.price * 100,
       });
       refunded = true;
     } catch {

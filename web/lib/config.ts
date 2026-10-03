@@ -19,6 +19,13 @@ export const facility = {
   capacityPerHour: 1,
   hittersPerSession: 3,
 
+  // A session is 50 minutes of hitting; the last 10 minutes of the hour
+  // reset the lane. Back-to-back bookings keep the lane through the buffer.
+  sessionMinutes: 50,
+  bufferMinutes: 10,
+  // Longest run of consecutive hours one customer can book in one checkout.
+  maxConsecutiveHours: 3,
+
   // Booking windows (days before a date that booking opens).
   memberWindowDays: 21,
   publicWindowDays: 7,
