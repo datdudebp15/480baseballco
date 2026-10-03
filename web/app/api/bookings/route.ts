@@ -49,12 +49,28 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null);
   const date: string = body?.date ?? "";
-  const hour: number = body?.hour;
-  const duration = Math.min(
-    Math.max(Number(body?.duration) || 1, 1),
-    facility.maxConsecutiveHours
-  );
-  const hoursList = Array.from({ length: duration }, (_, i) => hour + i);
+  // Preferred: an explicit list of hours (Photos-style multi-select; need
+  // not be consecutive). Fallback: hour + duration for older clients.
+  let hoursList: number[] = Array.isArray(body?.hours)
+    ? [...new Set<number>(body.hours.map((h: unknown) => Number(h)))]
+        .filter((h) => Number.isInteger(h))
+        .sort((a, b) => a - b)
+    : [];
+  if (hoursList.length === 0) {
+    const hour: number = body?.hour;
+    const duration = Math.min(
+      Math.max(Number(body?.duration) || 1, 1),
+      facility.maxConsecutiveHours
+    );
+    hoursList = Array.from({ length: duration }, (_, i) => hour + i);
+  }
+  if (hoursList.length > facility.maxConsecutiveHours) {
+    return NextResponse.json(
+      { error: `Up to ${facility.maxConsecutiveHours} sessions per checkout.` },
+      { status: 400 }
+    );
+  }
+  const duration = hoursList.length;
   const now = phoenixNow();
 
   // Every hour in the block must clear the same rules (window, operating
@@ -153,7 +169,7 @@ export async function POST(req: Request) {
         {
           error:
             duration > 1
-              ? "Part of that block just filled up — pick different hours."
+              ? "One of those hours just filled up — adjust your selection."
               : "That hour just filled up — pick another slot.",
         },
         { status: 409 }
@@ -179,8 +195,8 @@ export async function POST(req: Request) {
   const customerId = await getOrCreateCustomer(db, user);
   const label =
     duration > 1
-      ? `Hitting Sessions — ${formatDayLong(dateFromKey(date))} ${formatHour(hour)} (${duration} hours)`
-      : `Hitting Session — ${formatDayLong(dateFromKey(date))} ${formatHour(hour)}`;
+      ? `Hitting Sessions — ${formatDayLong(dateFromKey(date))}: ${hoursList.map(formatHour).join(", ")}`
+      : `Hitting Session — ${formatDayLong(dateFromKey(date))} ${formatHour(hoursList[0])}`;
 
   // One tap: charge the saved card off-session if there is one.
   const savedCard = await getSavedCard(customerId);

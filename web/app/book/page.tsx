@@ -7,7 +7,7 @@ import {
   formatDayShort,
   formatHour,
 } from "@/lib/schedule";
-import { downloadIcs } from "@/lib/ics";
+import { downloadIcsSet } from "@/lib/ics";
 
 type RosterEntry = { name: string; member: boolean; friend: boolean; team?: boolean };
 type Slot = {
@@ -34,10 +34,11 @@ type Schedule = {
 export default function BookPage() {
   const [data, setData] = useState<Schedule | null>(null);
   const [selected, setSelected] = useState(0);
-  const [duration, setDuration] = useState(1);
+  const [picked, setPicked] = useState<number[]>([]); // hours selected Photos-style
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
-  const [justBooked, setJustBooked] = useState<{ date: string; hour: number; hours: number } | null>(null);
-  const [busyHour, setBusyHour] = useState<number | null>(null);
+  const [justBooked, setJustBooked] = useState<{ date: string; hours: number[] } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const MAX_PICK = 3;
   const noticeRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
@@ -123,16 +124,33 @@ export default function BookPage() {
       .filter((s) => !s.past)
       .reduce((sum, s) => sum + Math.max(0, capacity - s.count), 0);
 
-  async function book(slot: Slot) {
+  function togglePick(slot: Slot) {
     if (!user) {
       window.location.href = "/login?next=/book";
       return;
     }
-    setBusyHour(slot.hour);
+    setNotice(null);
+    setPicked((prev) => {
+      if (prev.includes(slot.hour)) return prev.filter((h) => h !== slot.hour);
+      if (prev.length >= MAX_PICK) {
+        setNotice({
+          kind: "info",
+          text: `Up to ${MAX_PICK} sessions per checkout — unselect one first.`,
+        });
+        return prev;
+      }
+      return [...prev, slot.hour];
+    });
+  }
+
+  async function bookPicked() {
+    if (picked.length === 0) return;
+    const hours = [...picked].sort((a, b) => a - b);
+    setBusy(true);
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: day.key, hour: slot.hour, duration }),
+      body: JSON.stringify({ date: day.key, hours }),
     });
     const result = await res.json();
     if (res.ok && result.checkoutUrl) {
@@ -140,10 +158,10 @@ export default function BookPage() {
       window.location.href = result.checkoutUrl;
       return;
     }
-    setBusyHour(null);
-    setJustBooked(res.ok ? { date: day.key, hour: slot.hour, hours: duration } : null);
-    const span =
-      duration > 1 ? `${formatHour(slot.hour)} for ${duration} hours` : formatHour(slot.hour);
+    setBusy(false);
+    if (res.ok) setPicked([]);
+    setJustBooked(res.ok ? { date: day.key, hours } : null);
+    const span = hours.map(formatHour).join(", ");
     setNotice(
       res.ok
         ? {
@@ -159,10 +177,10 @@ export default function BookPage() {
 
   async function cancel(slot: Slot) {
     if (!slot.mine) return;
-    setBusyHour(slot.hour);
+    setBusy(true);
     const res = await fetch(`/api/bookings?id=${slot.mine}`, { method: "DELETE" });
     const result = await res.json();
-    setBusyHour(null);
+    setBusy(false);
     setNotice(
       res.ok
         ? { kind: "success", text: "Booking canceled." }
@@ -192,6 +210,7 @@ export default function BookPage() {
           setSelected(i);
           setNotice(null);
           setJustBooked(null);
+          setPicked([]);
         }}
       >
         <span className="wd">{i === 0 ? "Today" : weekday}</span>
@@ -219,21 +238,9 @@ export default function BookPage() {
       </p>
 
       {user && (
-        <div className="pick-row" style={{ marginBottom: 14 }}>
-          <span style={{ fontSize: 13, color: "var(--muted)", alignSelf: "center" }}>
-            Session length:
-          </span>
-          {[1, 2, 3].map((d) => (
-            <button
-              key={d}
-              type="button"
-              className={`pick${duration === d ? " on" : ""}`}
-              onClick={() => setDuration(d)}
-            >
-              {d} hour{d > 1 ? "s" : ""}
-            </button>
-          ))}
-        </div>
+        <p className="page-sub" style={{ marginTop: -8 }}>
+          Tap the hours you want (up to {MAX_PICK}), then book them together.
+        </p>
       )}
 
       {!user && (
@@ -267,7 +274,7 @@ export default function BookPage() {
               {" "}
               <button
                 className="link-btn"
-                onClick={() => downloadIcs(justBooked.date, justBooked.hour, justBooked.hours)}
+                onClick={() => downloadIcsSet(justBooked.date, justBooked.hours)}
               >
                 📅 Add to Calendar
               </button>
@@ -292,32 +299,19 @@ export default function BookPage() {
         </p>
       ) : (
         <div className="slot-grid">
-          {slots.map((slot, idx) => {
+          {slots.map((slot) => {
             const full = slot.count >= capacity;
             const unavailable =
               slot.past || (full && !slot.mine) || (lockedOut && !slot.mine);
-            // A multi-hour block needs every consecutive hour open.
-            let blockOk = !full && !slot.past && !lockedOut;
-            for (let k = 1; k < duration && blockOk; k++) {
-              const nxt = slots[idx + k];
-              blockOk =
-                !!nxt &&
-                nxt.hour === slot.hour + k &&
-                !nxt.past &&
-                nxt.count < capacity;
-            }
-            const base = rates ? (isMember ? rates.member : rates.public) : null;
-            const blockPrice =
-              rate !== null && base !== null
-                ? data.firstSessionEligible
-                  ? rates!.firstSession + base * (duration - 1)
-                  : base * duration
-                : null;
+            const selectable = !!user && !slot.past && !full && !lockedOut && !slot.mine;
+            const isPicked = picked.includes(slot.hour);
             return (
               <div
                 key={slot.hour}
-                className={`slot${unavailable && !slot.mine ? " unavailable" : ""}`}
+                className={`slot${unavailable && !slot.mine ? " unavailable" : ""}${selectable ? " selectable" : ""}${isPicked ? " picked" : ""}`}
+                onClick={selectable ? () => togglePick(slot) : undefined}
               >
+                {isPicked && <span className="sel-badge">✓</span>}
                 <div className="time">{formatHour(slot.hour)}</div>
                 <div className="spots">
                   {slot.past
@@ -355,8 +349,11 @@ export default function BookPage() {
                     <div className="state reserved">Reserved ✓</div>
                     <button
                       className="link-btn"
-                      disabled={busyHour === slot.hour}
-                      onClick={() => cancel(slot)}
+                      disabled={busy}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        cancel(slot);
+                      }}
                     >
                       Cancel
                     </button>
@@ -367,25 +364,43 @@ export default function BookPage() {
                   <div className="state">Full</div>
                 ) : lockedOut ? (
                   <div className="state">Members Only</div>
-                ) : duration > 1 && !blockOk ? (
-                  <div className="state">No {duration}-hr Block</div>
+                ) : !user ? (
+                  <button onClick={() => togglePick(slot)}>Log In to Book</button>
                 ) : (
-                  <button
-                    disabled={busyHour === slot.hour}
-                    onClick={() => book(slot)}
-                  >
-                    {busyHour === slot.hour
-                      ? "Booking…"
-                      : !user
-                        ? "Log In to Book"
-                        : duration > 1
-                          ? `Book ${duration} hrs${blockPrice !== null ? ` · $${blockPrice}` : ""}`
-                          : "Book"}
-                  </button>
+                  <div className={`state${isPicked ? " reserved" : ""}`}>
+                    {isPicked ? "Selected ✓" : "Tap to select"}
+                  </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {picked.length > 0 && (
+        <div className="action-bar">
+          <span className="ab-summary">
+            {picked.length} session{picked.length > 1 ? "s" : ""}
+            {" · "}
+            {[...picked].sort((a, b) => a - b).map(formatHour).join(", ")}
+            {rates && (
+              <strong>
+                {" · $"}
+                {data.firstSessionEligible
+                  ? rates.firstSession +
+                    (isMember ? rates.member : rates.public) * (picked.length - 1)
+                  : (isMember ? rates.member : rates.public) * picked.length}
+              </strong>
+            )}
+          </span>
+          <span>
+            <button className="link-btn" onClick={() => setPicked([])}>
+              Clear
+            </button>{" "}
+            <button className="btn small" disabled={busy} onClick={bookPicked}>
+              {busy ? "Booking…" : "Book"}
+            </button>
+          </span>
         </div>
       )}
     </>

@@ -790,6 +790,59 @@ a {
   text-align: left;
 }
 
+/* Photos-style slot selection */
+.slot.selectable {
+  cursor: pointer;
+  position: relative;
+}
+
+.slot.selectable:hover {
+  border-color: var(--gold);
+}
+
+.slot.picked {
+  border: 2px solid var(--red);
+  background: #fdf7f0;
+}
+
+.sel-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--red);
+  color: var(--cream);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: var(--cream);
+  border-top: 2px solid var(--gold);
+  box-shadow: 0 -4px 16px rgba(43, 26, 22, 0.12);
+}
+
+.ab-summary {
+  font-size: 14px;
+  color: var(--ink);
+}
+
 .occ-click {
   cursor: pointer;
 }
