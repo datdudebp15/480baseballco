@@ -207,8 +207,9 @@ export default function BookPage() {
       <h1 className="page-title">Book Cage Time</h1>
       <p className="page-sub">
         Members reserve up to {windows.member} days ahead — public booking
-        opens {windows.public} days before each date. All sessions are one
-        hour, {capacity} spots per hour.
+        opens {windows.public} days before each date. Each session is a
+        private hour: one booking covers the lane, bring up to two training
+        partners.
       </p>
 
       {!user && (
@@ -280,7 +281,9 @@ export default function BookPage() {
                 <div className="spots">
                   {slot.past
                     ? "—"
-                    : `${Math.max(capacity - slot.count, 0)} of ${capacity} spots open`}
+                    : slot.count >= capacity
+                      ? "Booked"
+                      : "Open: your hour, up to 3 hitters"}
                 </div>
 
                 {slot.roster && slot.roster.length > 0 && !slot.past && (

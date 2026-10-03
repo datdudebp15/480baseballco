@@ -14,8 +14,10 @@ export const facility = {
   openHour: 8,
   closeHour: 22,
 
-  // Spots available per one-hour slot.
-  capacityPerHour: 3,
+  // Bookings per one-hour slot. ONE booking takes the whole lane — a
+  // session includes up to 3 hitters (the booker brings two others).
+  capacityPerHour: 1,
+  hittersPerSession: 3,
 
   // Booking windows (days before a date that booking opens).
   memberWindowDays: 21,

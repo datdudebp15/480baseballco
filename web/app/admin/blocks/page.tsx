@@ -187,16 +187,6 @@ export default function AdminBlocksPage() {
         </div>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <label className="field" style={{ flex: 1, minWidth: 150 }}>
-            Spots per hour (of {facility.capacityPerHour})
-            <select value={units} onChange={(e) => setUnits(Number(e.target.value))}>
-              {[1, 2, 3].slice(0, facility.capacityPerHour).map((u) => (
-                <option key={u} value={u}>
-                  {u === facility.capacityPerHour ? `${u} — whole lane` : u}
-                </option>
-              ))}
-            </select>
-          </label>
           <label className="field" style={{ flex: 2, minWidth: 200 }}>
             Note (rate, contact, invoice #…)
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="$250/hr · coach Smith · net 30" />
@@ -239,7 +229,7 @@ export default function AdminBlocksPage() {
                   <h3>
                     {first.teamName}{" "}
                     <span className="tag member">
-                      {rows.length} slot{rows.length === 1 ? "" : "s"} · {first.units}/hr
+                      {rows.length} hour{rows.length === 1 ? "" : "s"}
                     </span>
                   </h3>
                   <p style={{ fontSize: 14, color: "var(--muted)" }}>

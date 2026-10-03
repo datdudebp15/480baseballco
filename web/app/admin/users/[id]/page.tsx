@@ -285,7 +285,9 @@ export default function AdminUserPage() {
               <div className="spots">
                 {slot.past
                   ? "—"
-                  : `${Math.max(capacity - slot.count, 0)} of ${capacity} spots open`}
+                  : slot.count >= capacity
+                    ? "Booked"
+                    : "Open (whole lane, up to 3 hitters)"}
               </div>
               {slot.roster && slot.roster.length > 0 && !slot.past && (
                 <div className="roster">

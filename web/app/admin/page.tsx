@@ -203,9 +203,7 @@ export default function AdminPage() {
                   </span>
                 ))}
               </span>
-              <span>
-                {s.count}/{capacity}
-              </span>
+              <span>{s.count >= capacity ? "Booked" : "Open"}</span>
             </li>
           ))}
         </ul>
@@ -215,7 +213,7 @@ export default function AdminPage() {
         Week Occupancy
       </h2>
       <p className="page-sub">
-        Open spots per hour (out of {capacity}). Hover a cell to see
+        One booking takes the whole lane (up to 3 hitters per session): ● booked, · open. Hover a cell to see
         who&apos;s booked.
       </p>
 
@@ -247,11 +245,11 @@ export default function AdminPage() {
                   return (
                     <td
                       key={d.key}
-                      className={`occ-${Math.max(open, 0)} occ-click`}
+                      className={`occ-${open <= 0 ? 0 : 3} occ-click`}
                       title={names ? `${names} — click to manage` : "Click to manage"}
                       onClick={() => openSlot(d.key, hour)}
                     >
-                      {slot.past ? "—" : open}
+                      {slot.past ? "—" : open <= 0 ? "●" : "·"}
                     </td>
                   );
                 })}
@@ -268,7 +266,7 @@ export default function AdminPage() {
               {formatDayShort(dateFromKey(slotDetail.date)).weekday}{" "}
               {dateFromKey(slotDetail.date).getDate()} · {formatHour(slotDetail.hour)}{" "}
               <span className="tag">
-                {slotDetail.open} of {slotDetail.capacity} open
+                {slotDetail.open > 0 ? "Open" : "Taken"}
               </span>
             </h3>
             <button className="link-btn muted" onClick={() => setSlotDetail(null)}>
@@ -304,7 +302,7 @@ export default function AdminPage() {
               {slotDetail.blocks.map((bl) => (
                 <li key={`t-${bl.id}`} className="row">
                   <span>
-                    {bl.teamName} <span className="tag member">Team · {bl.units} spot{bl.units === 1 ? "" : "s"}</span>
+                    {bl.teamName} <span className="tag member">Team block</span>
                     {bl.note ? <small> {bl.note}</small> : null}
                   </span>
                   <button className="link-btn" onClick={() => removeBlockHour(bl.id, bl.teamName)}>
